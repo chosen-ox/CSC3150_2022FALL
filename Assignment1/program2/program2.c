@@ -27,7 +27,7 @@ struct wait_opts {
 };
 
 static struct task_struct *task;
-extern struct filename *getname(const char __user *);
+extern struct filename * getname(const char __user * myfile);
 extern pid_t kernel_clone(struct kernel_clone_args *args);
 extern int do_execve(struct filename *filename,
 	const char __user *const __user *__argv,
@@ -35,7 +35,7 @@ extern int do_execve(struct filename *filename,
 extern long do_wait (struct wait_opts *wo);
 
 void my_wait(pid_t pid) {
-    int status = 0;
+    int status = 6;
     struct wait_opts wo;
     struct pid *wo_pid = NULL;
     enum pid_type type;
@@ -48,6 +48,7 @@ void my_wait(pid_t pid) {
     wo.wo_info=NULL;
     wo.wo_stat=(int __user*)&status;
     wo.wo_rusage = NULL;
+    printk("[program2] : look at me %d", *wo.wo_stat)
     
     printk("[program2] : receive signal");
     int a;
@@ -62,11 +63,12 @@ void my_wait(pid_t pid) {
 
 int my_exec(void) {
     int result;
-    const char path[] = "/home/vagrant/CSC3150_2022FALL/Assignment1/program2/test";
+    const char __user path[] = "/tmp/test";
     const char *const argv[] = {path, NULL, NULL};
     const char *const envp[] = {"HOME=/", "PATH=/sbin:/user/sbin:/bin:/usr/bin", NULL};
 
-    struct filename *my_filename = getname(path);
+    struct filename * my_filename =getname(path);
+	// printk("[program2] : here am i%s",my_filename->name);
 
     /* execute a test program in child process */
     printk("[program2] : child process");
@@ -77,7 +79,8 @@ int my_exec(void) {
         return 0;
     }
     else {
-        printk();
+        printk("[program2] : debug%ld", (long)my_filename);
+        printk("[program2] : result is %ld", (long)result);
         do_exit(result);
     }
 } 
