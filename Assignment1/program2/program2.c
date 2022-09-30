@@ -9,29 +9,99 @@
 #include <linux/jiffies.h>
 #include <linux/kmod.h>
 #include <linux/fs.h>
+#include <linux/signal.h>
 
 MODULE_LICENSE("GPL");
 
-static struct task_struct *task;
-static struct kernel_clone_args args = {
-        .exit_signal = SIGCHLD,
+struct wait_opts {
+	enum pid_type		wo_type;
+	int			wo_flags;
+	struct pid		*wo_pid;
+
+	struct waitid_info	*wo_info;
+	int	    __user  *wo_stat;
+	struct rusage		*wo_rusage;
+
+	wait_queue_entry_t		child_wait;
+	int			notask_error;
 };
 
+static struct task_struct *task;
 extern struct filename *getname(const char __user *);
 extern pid_t kernel_clone(struct kernel_clone_args *args);
+extern int do_execve(struct filename *filename,
+	const char __user *const __user *__argv,
+	const char __user *const __user *__envp);
+extern long do_wait (struct wait_opts *wo);
+
+void my_wait(pid_t pid) {
+    int status = 0;
+    struct wait_opts wo;
+    struct pid *wo_pid = NULL;
+    enum pid_type type;
+    type = PIDTYPE_PID;
+    wo_pid = find_get_pid(pid);
+
+    wo.wo_type=type;
+    wo.wo_pid=wo_pid;
+    wo.wo_flags=WEXITED;
+    wo.wo_info=NULL;
+    wo.wo_stat=(int __user*)&status;
+    wo.wo_rusage = NULL;
+    
+    printk("[program2] : receive signal");
+    int a;
+    a = do_wait(&wo);
+    printk("[program2] :do_wait return value is %d\n", a);
+
+    printk("[program2] : The return signal is %d\n", status);
+    put_pid(wo_pid);
+
+    return ;
+}
+
+int my_exec(void) {
+    int result;
+    const char path[] = "/home/vagrant/CSC3150_2022FALL/Assignment1/program2/test";
+    const char *const argv[] = {path, NULL, NULL};
+    const char *const envp[] = {"HOME=/", "PATH=/sbin:/user/sbin:/bin:/usr/bin", NULL};
+
+    struct filename *my_filename = getname(path);
+
+    /* execute a test program in child process */
+    printk("[program2] : child process");
+
+    result = do_execve(my_filename, argv, envp);
+
+    if (!result) {
+        return 0;
+    }
+    else {
+        printk();
+        do_exit(result);
+    }
+} 
 //implement fork function
 int my_fork(void *argc){
+
+    struct kernel_clone_args args = {
+        .exit_signal = SIGCHLD,
+        .stack = (unsigned long)&my_exec,
+        .stack_size = 0,
+        .parent_tid = NULL,
+        .child_tid = NULL,
+        .tls = 0,
+    };
 
 
     //set default sigaction for current process
     pid_t pid;
     int i;
     struct k_sigaction *k_action = &current->sighand->action[0];
-    char path[] = "/etc/test";
 
-    const char *const argv[]={path, NULL};
+    // const char *const argv[]={path, NULL};
 
-    struct filename * result;
+    // struct filename * result;
 
 
     for(i=0;i<_NSIG;i++){
@@ -49,21 +119,16 @@ int my_fork(void *argc){
         printk("fork failed");
         return -1;
     }
-
-    if (pid != 0 ) {
-        printk("I am parent\n");
-    }
-    else {
-        printk("I am child\n");
-        result = getname(path);
-        do_execve(path, argv, NULL);
-    }
+    printk("[program2] : I am parent my pid is %d\n", (int)current->pid);
+    
+    printk("[program2] : I am child my pid is %d\n", pid);
 
 
 
     /* execute a test program in child process */
 
     /* wait until child process terminates */
+    my_wait(pid);
 
     return 0;
 }
