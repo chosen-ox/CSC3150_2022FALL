@@ -48,7 +48,7 @@ void my_wait(pid_t pid) {
     wo.wo_info=NULL;
     wo.wo_stat=(int __user*)&status;
     wo.wo_rusage = NULL;
-    printk("[program2] : look at me %d", *wo.wo_stat)
+    printk("[program2] : look at me %d", *wo.wo_stat);
    
     printk("[program2] : receive signal");
     int a;
