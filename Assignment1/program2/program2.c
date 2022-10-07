@@ -113,7 +113,7 @@ void my_output(int signal) {
 }
 
 void my_wait(pid_t pid) {
-    int status = 6;
+    int a;
     struct wait_opts wo;
     struct pid *wo_pid = NULL;
     enum pid_type type;
@@ -124,13 +124,11 @@ void my_wait(pid_t pid) {
     wo.wo_pid = wo_pid;
     wo.wo_flags = WEXITED| WUNTRACED;
     wo.wo_info = NULL;
-    wo.wo_stat = status;
     wo.wo_rusage = NULL;
     printk("[program2] : look at me %d", wo.wo_stat);
 
 
     printk("[program2] : receive signal");
-    int a;
 
     a = do_wait(&wo);
     printk("[program2] :do_wait return value is %d\n", a);
@@ -145,11 +143,6 @@ void my_wait(pid_t pid) {
 int my_exec(void) {
     int result;
     const char __user path[] = "/home/vagrant/CSC3150_2022FALL/Assignment1/program2/test";
-    const char *const argv[] = {path, NULL, NULL};
-    const char *const envp[] = {"HOME=/", "PATH=/sbin:/user/sbin:/bin:/usr/bin", NULL};
-
-    struct filename *my_filename = getname_kernel(path);
-    // printk("[program2] : here am i%s",my_filename->name);
 
     /* execute a test program in child process */
     printk("[program2] : child process");

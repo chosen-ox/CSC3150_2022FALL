@@ -37,12 +37,12 @@ __used __section("__versions") = {
 	{ 0x952664c5, "do_exit" },
 	{ 0x5b8239ca, "__x86_return_thunk" },
 	{ 0x2d15d1b6, "do_execve" },
-	{ 0xc5850110, "printk" },
 	{ 0x85416d23, "getname_kernel" },
+	{ 0xc5850110, "printk" },
 	{ 0xbdfb6dbb, "__fentry__" },
 };
 
 MODULE_INFO(depends, "");
 
 
-MODULE_INFO(srcversion, "49BA2AA06C97EFFC900E3F0");
+MODULE_INFO(srcversion, "3308877D9CB42D9B134A77B");
