@@ -56,7 +56,7 @@ void my_wait(pid_t pid) {
     a = do_wait(&wo);
     printk("[program2] :do_wait return value is %d\n", a);
 
-    printk("[program2] : The return signal is %d\n", status);
+    printk("[program2] : The return signal is %d\n", wo.wo_stat);
     put_pid(wo_pid);
 
     return;
@@ -64,7 +64,7 @@ void my_wait(pid_t pid) {
 
 int my_exec(void) {
     int result;
-    const char __user path[] = "/tmp/test";
+    const char __user path[] = "/home/vagrant/CSC3150_2022FALL/Assignment1/program2/test";
     const char *const argv[] = {path, NULL, NULL};
     const char *const envp[] = {"HOME=/", "PATH=/sbin:/user/sbin:/bin:/usr/bin", NULL};
 
@@ -74,13 +74,11 @@ int my_exec(void) {
     /* execute a test program in child process */
     printk("[program2] : child process");
 
-    result = do_execve(my_filename, argv, envp);
+    result = do_execve(getname_kernel(path), NULL, NULL);
 
     if (!result) {
         return 0;
     } else {
-        printk("[program2] : debug%ld", (long) my_filename);
-        printk("[program2] : result is %ld", (long) result);
         do_exit(result);
     }
 }
@@ -89,7 +87,7 @@ int my_fork(void *argc) {
 
     struct kernel_clone_args args = {
             .exit_signal = SIGCHLD,
-            .stack = (unsigned long) &my_exec,
+            .stack = my_exec,
             .stack_size = 0,
             .parent_tid = NULL,
             .child_tid = NULL,
