@@ -122,7 +122,7 @@ void my_wait(pid_t pid) {
 
     wo.wo_type = type;
     wo.wo_pid = wo_pid;
-    wo.wo_flags = WEXITED| WUNTRACED;
+    wo.wo_flags = WEXITED | WUNTRACED;
     wo.wo_info = NULL;
     wo.wo_rusage = NULL;
     printk("[program2] : look at me %d", wo.wo_stat);
