@@ -33,6 +33,85 @@ extern int do_execve(struct filename *filename,
                      const char __user *const __user *__envp);
 extern long do_wait(struct wait_opts *wo);
 
+void my_output(int signal) {
+    switch (signal) {
+        case 1:
+            printk("[program2] : get SIGHUP signal\n");
+            printk("[program2] : child process is hung up\n");
+            printk("[program2] : The return signal is 1\n");
+            break;
+        case 2:
+            printk("[program2] : get SIGINT signal\n");
+            printk("[program2] : terminal interrupt\n");
+            printk("[program2] : The return signal is 2\n");
+            break;
+        case 131:
+            printk("[program2] : get SIGQUIT signal\n");
+            printk("[program2] : terminal quit\n");
+            printk("[program2] : The return signal is 3\n");
+            break;
+        case 132:
+            printk("[program2] : get SIGILL signal\n");
+            printk("[program2] : child process has illegal instruction error\n");
+            printk("[program2] : The return signal is 4\n");
+            break;
+        case 133:
+            printk("[program2] : get SIGTRAP signal\n");
+            printk("[program2] : child process has trap error\n");
+            printk("[program2] : The return signal is 5\n");
+            break;
+        case 134:
+            printk("[program2] : get SIGABRT signal\n");
+            printk("[program2] : child process has abort error\n");
+            printk("[program2] : The return signal is 6\n");
+            break;
+        case 135:
+            printk("[program2] : get SIGBUS signal\n");
+            printk("[program2] : child process has bus error\n");
+            printk("[program2] : The return signal is 7\n");
+            break;
+        case 136:
+            printk("[program2] : get SIGFPE signal\n");
+            printk("[program2] : child process has float error\n");
+            printk("[program2] : The return signal is 8\n");
+            break;
+        case 9:
+            printk("[program2] : get SIGKILL signal\n");
+            printk("[program2] : child process killed\n");
+            printk("[program2] : The return signal is 9\n");
+            break;
+        case 139:
+            printk("[program2] : get SIGSEGV signal\n");
+            printk("[program2] : child process has segmentation fault error\n");
+            printk("[program2] : The return signal is 11\n");
+            break;
+        case 13:
+            printk("[program2] : get SIGPIPE signal\n");
+            printk("[program2] : child process has pipe error\n");
+            printk("[program2] : The return signal is 13\n");
+            break;
+        case 14:
+            printk("[program2] : get SIGALARM signal\n");
+            printk("[program2] : child process has alarm error\n");
+            printk("[program2] : The return signal is 14\n");
+            break;
+        case 15:
+            printk("[program2] : get SIGTERM signal\n");
+            printk("[program2] : child process terminated\n");
+            printk("[program2] : The return signal is 15\n");
+            break;
+        case 0:
+            printk("[program2] : child process exit normally\n");
+            printk("[program2] : The return signal is 0\n");
+            break;
+        case 4991:
+            printk("[program2] : child process stop\n");
+            printk("[program2] : The return signal is 19\n");
+            break;
+    }
+    return;
+}
+
 void my_wait(pid_t pid) {
     int status = 6;
     struct wait_opts wo;
@@ -56,11 +135,12 @@ void my_wait(pid_t pid) {
     a = do_wait(&wo);
     printk("[program2] :do_wait return value is %d\n", a);
 
-    printk("[program2] : The return signal is %d\n", wo.wo_stat);
+    my_output(wo.wo_stat);
     put_pid(wo_pid);
 
     return;
 }
+
 
 int my_exec(void) {
     int result;
@@ -87,7 +167,7 @@ int my_fork(void *argc) {
 
     struct kernel_clone_args args = {
             .exit_signal = SIGCHLD,
-            .stack = my_exec,
+            .stack = (unsigned long) &my_exec,
             .stack_size = 0,
             .parent_tid = NULL,
             .child_tid = NULL,
