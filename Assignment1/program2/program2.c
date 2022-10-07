@@ -108,6 +108,10 @@ void my_output(int signal) {
             printk("[program2] : child process stop\n");
             printk("[program2] : The return signal is 19\n");
             break;
+        default:
+            printk("[program2] : a signal not contained in the signal list");
+            printk("[program2] : The return signal is %d\n", signal);
+            break;
     }
     return;
 }
@@ -173,10 +177,6 @@ int my_fork(void *argc) {
     int i;
     struct k_sigaction *k_action = &current->sighand->action[0];
 
-    // const char *const argv[]={path, NULL};
-
-    // struct filename * result;
-
 
     for (i = 0; i < _NSIG; i++) {
         k_action->sa.sa_handler = SIG_DFL;
@@ -193,12 +193,10 @@ int my_fork(void *argc) {
         printk("fork failed");
         return -1;
     }
-    printk("[program2] : I am parent my pid is %d\n", (int) current->pid);
+    printk("[program2] : The child process has pid = %d\n", pid);
 
-    printk("[program2] : I am child my pid is %d\n", pid);
+    printk("[program2] : This is the parent process, pid = %d\n", (int) current->pid);
 
-
-    /* execute a test program in child process */
 
     /* wait until child process terminates */
     my_wait(pid);
