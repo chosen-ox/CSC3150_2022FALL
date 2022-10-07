@@ -1,38 +1,37 @@
-#include <linux/module.h>
-#include <linux/sched.h>
-#include <linux/pid.h>
-#include <linux/kthread.h>
-#include <linux/kernel.h>
 #include <linux/err.h>
-#include <linux/slab.h>
-#include <linux/printk.h>
-#include <linux/jiffies.h>
-#include <linux/kmod.h>
 #include <linux/fs.h>
+#include <linux/jiffies.h>
+#include <linux/kernel.h>
+#include <linux/kmod.h>
+#include <linux/kthread.h>
+#include <linux/module.h>
+#include <linux/pid.h>
+#include <linux/printk.h>
+#include <linux/sched.h>
 #include <linux/signal.h>
+#include <linux/slab.h>
 
 MODULE_LICENSE("GPL");
 
 struct wait_opts {
-	enum pid_type		wo_type;
-	int			wo_flags;
-	struct pid		*wo_pid;
+    enum pid_type wo_type;
+    int wo_flags;
+    struct pid *wo_pid;
 
-	struct waitid_info	*wo_info;
-	int	    __user  *wo_stat;
-	struct rusage		*wo_rusage;
+    struct waitid_info *wo_info;
+    int wo_stat;
+    struct rusage *wo_rusage;
 
-	wait_queue_entry_t		child_wait;
-	int			notask_error;
+    wait_queue_entry_t child_wait;
+    int notask_error;
 };
-
 static struct task_struct *task;
-extern struct filename *getname_kernel(const char * filename);
+extern struct filename *getname_kernel(const char *filename);
 extern pid_t kernel_clone(struct kernel_clone_args *args);
 extern int do_execve(struct filename *filename,
-	const char __user *const __user *__argv,
-	const char __user *const __user *__envp);
-extern long do_wait (struct wait_opts *wo);
+                     const char __user *const __user *__argv,
+                     const char __user *const __user *__envp);
+extern long do_wait(struct wait_opts *wo);
 
 void my_wait(pid_t pid) {
     int status = 6;
@@ -42,23 +41,25 @@ void my_wait(pid_t pid) {
     type = PIDTYPE_PID;
     wo_pid = find_get_pid(pid);
 
-    wo.wo_type=type;
-    wo.wo_pid=wo_pid;
-    wo.wo_flags=WEXITED;
-    wo.wo_info=NULL;
-    wo.wo_stat=(int __user*)&status;
+    wo.wo_type = type;
+    wo.wo_pid = wo_pid;
+    wo.wo_flags = WEXITED;
+    wo.wo_info = NULL;
+    wo.wo_stat = status;
     wo.wo_rusage = NULL;
-    printk("[program2] : look at me %d", *wo.wo_stat);
-   
+    printk("[program2] : look at me %d", wo.wo_stat);
+
+
     printk("[program2] : receive signal");
     int a;
+
     a = do_wait(&wo);
     printk("[program2] :do_wait return value is %d\n", a);
 
     printk("[program2] : The return signal is %d\n", status);
     put_pid(wo_pid);
 
-    return ;
+    return;
 }
 
 int my_exec(void) {
@@ -67,8 +68,8 @@ int my_exec(void) {
     const char *const argv[] = {path, NULL, NULL};
     const char *const envp[] = {"HOME=/", "PATH=/sbin:/user/sbin:/bin:/usr/bin", NULL};
 
-    struct filename * my_filename =getname_kernel(path);
-	// printk("[program2] : here am i%s",my_filename->name);
+    struct filename *my_filename = getname_kernel(path);
+    // printk("[program2] : here am i%s",my_filename->name);
 
     /* execute a test program in child process */
     printk("[program2] : child process");
@@ -77,23 +78,22 @@ int my_exec(void) {
 
     if (!result) {
         return 0;
-    }
-    else {
-        printk("[program2] : debug%ld", (long)my_filename);
-        printk("[program2] : result is %ld", (long)result);
+    } else {
+        printk("[program2] : debug%ld", (long) my_filename);
+        printk("[program2] : result is %ld", (long) result);
         do_exit(result);
     }
-} 
+}
 //implement fork function
-int my_fork(void *argc){
+int my_fork(void *argc) {
 
     struct kernel_clone_args args = {
-        .exit_signal = SIGCHLD,
-        .stack = (unsigned long)&my_exec,
-        .stack_size = 0,
-        .parent_tid = NULL,
-        .child_tid = NULL,
-        .tls = 0,
+            .exit_signal = SIGCHLD,
+            .stack = (unsigned long) &my_exec,
+            .stack_size = 0,
+            .parent_tid = NULL,
+            .child_tid = NULL,
+            .tls = 0,
     };
 
 
@@ -107,7 +107,7 @@ int my_fork(void *argc){
     // struct filename * result;
 
 
-    for(i=0;i<_NSIG;i++){
+    for (i = 0; i < _NSIG; i++) {
         k_action->sa.sa_handler = SIG_DFL;
         k_action->sa.sa_flags = 0;
         k_action->sa.sa_restorer = NULL;
@@ -118,14 +118,13 @@ int my_fork(void *argc){
     /* fork a process using kernel_clone or kernel_thread */
     pid = kernel_clone(&args);
 
-    if (pid==-1) {
+    if (pid == -1) {
         printk("fork failed");
         return -1;
     }
-    printk("[program2] : I am parent my pid is %d\n", (int)current->pid);
-    
-    printk("[program2] : I am child my pid is %d\n", pid);
+    printk("[program2] : I am parent my pid is %d\n", (int) current->pid);
 
+    printk("[program2] : I am child my pid is %d\n", pid);
 
 
     /* execute a test program in child process */
@@ -137,7 +136,7 @@ int my_fork(void *argc){
 }
 
 
-static int __init program2_init(void){
+static int __init program2_init(void) {
 
     printk("[program2] : Module_init Jiakun Fan\n");
 
@@ -156,7 +155,7 @@ static int __init program2_init(void){
     return 0;
 }
 
-static void __exit program2_exit(void){
+static void __exit program2_exit(void) {
     printk("[program2] : Module_exit\n");
 }
 
