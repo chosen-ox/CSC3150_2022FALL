@@ -129,13 +129,10 @@ void my_wait(pid_t pid) {
     wo.wo_flags = WEXITED | WUNTRACED;
     wo.wo_info = NULL;
     wo.wo_rusage = NULL;
-    printk("[program2] : look at me %d", wo.wo_stat);
-
 
     printk("[program2] : receive signal");
 
     a = do_wait(&wo);
-    printk("[program2] :do_wait return value is %d\n", a);
 
     my_output(wo.wo_stat);
     put_pid(wo_pid);
