@@ -9,6 +9,7 @@ int main(int argc, char *argv[]) {
     int status;
     pid_t pid;
     /* fork a child process */
+    printf("Process start to fork\n");
     pid = fork();
     char *arg[argc];
     for (int i = 0; i < argc - 1; i++) {
