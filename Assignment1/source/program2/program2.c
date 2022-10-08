@@ -105,6 +105,7 @@ void my_output(int signal) {
             printk("[program2] : The return signal is 0\n");
             break;
         case 4991:
+            printk("[program2] : get SIGSTOP signal\n");
             printk("[program2] : child process stop\n");
             printk("[program2] : The return signal is 19\n");
             break;
@@ -130,7 +131,6 @@ void my_wait(pid_t pid) {
     wo.wo_info = NULL;
     wo.wo_rusage = NULL;
 
-    printk("[program2] : receive signal");
 
     a = do_wait(&wo);
 
@@ -143,7 +143,7 @@ void my_wait(pid_t pid) {
 
 int my_exec(void) {
     int result;
-    const char __user path[] = "/home/vagrant/CSC3150_2022FALL/Assignment1/program2/test";
+    const char __user path[] = "/tmp/test";
 
     /* execute a test program in child process */
     printk("[program2] : child process");
