@@ -58,10 +58,19 @@ void *logs_move(void *index)
 	int a = *((int *)index);
 	while (true)
 	{
-		sleep(1);
-		map[logs_pos[a].x][logs_pos[a].y] = ' ';
-		map[logs_pos[a].x][(logs_pos[a].y + 5) % (COLUMN - 1)] = '=';
-		logs_pos[a].y = (logs_pos[a].y + 1) % (COLUMN - 1);
+		usleep(50000);
+		if (logs_pos[a].x % 2 == 0)
+		{
+			map[logs_pos[a].x][logs_pos[a].y] = ' ';
+			map[logs_pos[a].x][(logs_pos[a].y + 5) % (COLUMN - 1)] = '=';
+			logs_pos[a].y = (logs_pos[a].y + 1) % (COLUMN - 1);
+		}
+		else if ((logs_pos[a].x % 2) != 0)
+		{
+			map[logs_pos[a].x][(logs_pos[a].y + 48) % (COLUMN - 1)] = '=';
+			map[logs_pos[a].x][(logs_pos[a].y + 4) % (COLUMN - 1)] = ' ';
+			logs_pos[a].y = (logs_pos[a].y + 48) % (COLUMN - 1);
+		}
 	}
 
 	/*  Move the logs  */
@@ -106,14 +115,15 @@ int main(int argc, char *argv[])
 	int indexs[] = {0, 1, 2, 3, 4, 5, 6, 7, 8};
 	/*  Create pthreads for wood move and frog control.  */
 	pthread_t frog_ctl, logs[LOG_NUM];
-	// for (i = 0; i < LOG_NUM; i++)
-	// pthread_create(&logs[i], NULL, logs_move, &indexs[i]);
-	pthread_create(&logs[i], NULL, logs_move, &indexs[0]);
+	for (i = 0; i < LOG_NUM; i++)
+		pthread_create(&logs[i], NULL, logs_move, &indexs[i]);
+
+	// pthread_create(&logs[i], NULL, logs_move, &indexs[0]);
 	/*  Display the output for user: win, lose or quit.  */
 	// Print the map into screen
 	while (true)
 	{
-		sleep(1);
+		usleep(50000);
 		for (i = 0; i <= ROW; ++i)
 			puts(map[i]);
 	}
