@@ -5,7 +5,7 @@ CONTENTS:
 	README
 	
 	HOW TO COMPILE:
-		In the 'source' directory, type 'g++ hw2.cpp -lpthread' and enter on concole.
+		In the 'source' directory, type 'g++ hw2.cpp -lpthread -lncurses' and enter on concole.
 		
 		
 	HOW TO EXECUTE:
