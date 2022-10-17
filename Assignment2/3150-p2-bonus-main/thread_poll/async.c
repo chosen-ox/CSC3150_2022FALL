@@ -56,13 +56,23 @@ void *wait_to_wakeup(void *args)
             pthread_cond_wait(&cond, &lock);
         }
 
+        printf("size delete:%d\n", task_queue.size);
         task_queue.size--;
-        task_queue.head->handler_ptr(task_queue.head->args);
 
-        printf("size drease:%d\n", task_queue.size);
+        void (*handler)(int) = task_queue.head->handler_ptr;
+        int args = task_queue.head->args;
+        // if (task_queue.head->prev == NULL)
+        // {
+
+        //     printf("fuck the null\n");
+        // };
+
+        printf("the args%d\n", task_queue.head->args);
+
+        printf("size decrease:%d\n", task_queue.size);
         DL_DELETE(task_queue.head, task_queue.head);
         pthread_mutex_unlock(&lock);
-
+        handler(args);
         /* code */
         if (thread_exit)
             return NULL;
