@@ -84,7 +84,6 @@ void *logs_move(void *index)
 			}
 			if (is_move)
 			{
-				is_exist = 1;
 				frog.y++;
 			}
 		}
@@ -103,7 +102,6 @@ void *logs_move(void *index)
 			}
 			if (is_move)
 			{
-				is_exist = 1;
 				frog.y--;
 			}
 		}
@@ -231,7 +229,7 @@ int main(int argc, char *argv[])
 
 		if (frog.y < 0 || frog.y >= COLUMN - 1 || frog.x > ROW)
 		{
-			is_quit = 1;
+			// is_quit = 1;
 			std::cout << "You out of bound" << std::endl;
 			break;
 		}
@@ -244,14 +242,22 @@ int main(int argc, char *argv[])
 			std::cout << "You win the game!" << std::endl;
 			break;
 		}
-		if (frog.x != ROW && is_exist == 0)
+		if (frog.x != ROW)
 		{
-			is_quit = 1;
-			std::cout << "You drop in river" << std::endl;
-			break;
-		}
-		is_exist = 0;
+			int a = frog.x - 1;
+			int pos = frog.y;
+			int start = logs_pos[a].y;
+			int end = (logs_pos[a].y + logs_len[a] - 1) % (COLUMN - 1);
+			if ((logs_pos[a].y + logs_len[a] > 50 && pos < start && pos > end) || (logs_pos[a].y + logs_len[a] <= 50 && (pos > end || pos < start)))
+			{
+				std::cout << frog.y << "  " << logs_pos[frog.x - 1].y;
+				std::cout << "You drop in river" << std::endl;
+				break;
+			}
+		};
 	};
+	is_quit = 1;
+	usleep(UPDATE_INTERVAL);
 	usleep(UPDATE_INTERVAL);
 	return 0;
 }
