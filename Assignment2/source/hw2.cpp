@@ -14,6 +14,7 @@
 #define COLUMN 50
 #define LOG_NUM 9
 #define UPDATE_INTERVAL 70000
+
 struct Node
 {
 	int x, y;
@@ -27,6 +28,7 @@ int logs_len[LOG_NUM] = {11, 14, 13, 19, 12, 18, 19, 14, 17};
 int logs_init_pos[LOG_NUM] = {6, 23, 27, 14, 3, 19, 19, 20, 8};
 
 int is_quit = 0;
+int is_exist = 0;
 
 // Determine a keyboard is hit or not. If yes, return 1. If not, return 0.
 int kbhit(void)
@@ -82,6 +84,7 @@ void *logs_move(void *index)
 			}
 			if (is_move)
 			{
+				is_exist = 1;
 				frog.y++;
 			}
 		}
@@ -100,6 +103,7 @@ void *logs_move(void *index)
 			}
 			if (is_move)
 			{
+				is_exist = 1;
 				frog.y--;
 			}
 		}
@@ -214,16 +218,6 @@ int main(int argc, char *argv[])
 			std::cout << "You exit the game." << std::endl;
 			break;
 		}
-		if (frog.x <= 0)
-		{
-			std::cout << "You win the game!" << std::endl;
-			break;
-		}
-		if (frog.y < 0 || frog.y >= COLUMN - 1)
-		{
-			std::cout << "You lose the game!" << std::endl;
-			break;
-		}
 
 		for (j = 0; j < COLUMN - 1; ++j)
 		{
@@ -234,6 +228,17 @@ int main(int argc, char *argv[])
 		map[frog.x][frog.y] = '0';
 		for (i = 0; i <= ROW; ++i)
 			puts(map[i]);
+		if (frog.x <= 0)
+		{
+			std::cout << "You win the game!" << std::endl;
+			break;
+		}
+		if (frog.y < 0 || frog.y >= COLUMN - 1 || (frog.x != ROW && !is_exist))
+		{
+			std::cout << "You lose the game!" << std::endl;
+			break;
+		}
+		is_exist = 0;
 	};
 
 	return 0;
