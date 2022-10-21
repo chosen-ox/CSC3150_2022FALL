@@ -248,7 +248,7 @@ int main(int argc, char *argv[])
 			int pos = frog.y;
 			int start = logs_pos[a].y;
 			int end = (logs_pos[a].y + logs_len[a] - 1) % (COLUMN - 1);
-			if ((logs_pos[a].y + logs_len[a] > 50 && pos < start && pos > end) || (logs_pos[a].y + logs_len[a] <= 50 && (pos > end || pos < start)))
+			if ((logs_pos[a].y + logs_len[a] > 49 && pos < start && pos > end) || (logs_pos[a].y + logs_len[a] <= 49 && (pos > end || pos < start)))
 			{
 				std::cout << frog.y << "  " << logs_pos[frog.x - 1].y;
 				std::cout << "You drop in river" << std::endl;
