@@ -8,7 +8,6 @@
 my_queue_t task_queue;
 pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
-int thread_exit = 0;
 void async_init(int num_threads)
 {
 
@@ -37,7 +36,7 @@ void async_run(void (*hanlder)(int), int args)
     pthread_mutex_lock(&lock);
     DL_APPEND(task_queue.head, &item);
     task_queue.size++;
-    pthread_cond_broadcast(&cond);
+    pthread_cond_signal(&cond);
     printf("size increase: %d\n", task_queue.size);
     pthread_mutex_unlock(&lock);
     return;
@@ -46,7 +45,9 @@ void async_run(void (*hanlder)(int), int args)
 void *wait_to_wakeup(void *args)
 {
 
-    while (1)
+    void (*handler)(int);
+    int arg;
+    for (;;)
     {
         // pthread_mutex_lock(&lock);
 
@@ -60,8 +61,8 @@ void *wait_to_wakeup(void *args)
         printf("size delete:%d\n", task_queue.size);
         task_queue.size--;
 
-        void (*handler)(int) = task_queue.head->handler_ptr;
-        int args = task_queue.head->args;
+        handler = task_queue.head->handler_ptr;
+        arg = task_queue.head->args;
         // if (task_queue.head->prev == NULL)
         // {
 
@@ -73,9 +74,6 @@ void *wait_to_wakeup(void *args)
         printf("size decrease:%d\n", task_queue.size);
         DL_DELETE(task_queue.head, task_queue.head);
         pthread_mutex_unlock(&lock);
-        handler(args);
-        /* code */
-        if (thread_exit)
-            return NULL;
+        (*handler)(arg);
     }
 }
