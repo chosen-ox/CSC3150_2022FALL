@@ -7,7 +7,7 @@
 
 my_queue_t task_queue;
 pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
-pthread_mutex_t lock;
+pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 int thread_exit = 0;
 void async_init(int num_threads)
 {
@@ -37,7 +37,7 @@ void async_run(void (*hanlder)(int), int args)
     pthread_mutex_lock(&lock);
     DL_APPEND(task_queue.head, &item);
     task_queue.size++;
-    pthread_cond_signal(&cond);
+    pthread_cond_broadcast(&cond);
     printf("size increase: %d\n", task_queue.size);
     pthread_mutex_unlock(&lock);
     return;
@@ -48,7 +48,8 @@ void *wait_to_wakeup(void *args)
 
     while (1)
     {
-        pthread_mutex_lock(&lock);
+        // pthread_mutex_lock(&lock);
+
         printf("I got the lock\n");
         while (task_queue.size == 0)
         {
