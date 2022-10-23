@@ -5,14 +5,24 @@
 #include "utlist.h"
 #include <stdio.h>
 
-my_queue_t task_queue;
+#include <assert.h>
+my_queue_t *task_queue;
 pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+int threads = 0;
 void async_init(int num_threads)
 {
+    if (pthread_mutex_init(&lock, NULL) != 0)
+        printf("gg\n");
 
+    if (pthread_cond_init(&cond, NULL) != 0)
+        printf("gg\n");
+    exit;
     pthread_t threads[num_threads];
-    task_queue.size = 0;
+    task_queue = (my_queue_t *)malloc(sizeof(my_queue_t));
+
+    task_queue->head = NULL;
+    task_queue->size = 0;
     for (int i = 0; i < num_threads; i++)
     {
         pthread_create(&threads[i], NULL, wait_to_wakeup, NULL);
@@ -29,15 +39,34 @@ void async_init(int num_threads)
 
 void async_run(void (*hanlder)(int), int args)
 {
-    my_item_t item = {
-        .handler_ptr = hanlder,
-        .args = args,
-    };
+    my_item_t *item_ptr = (my_item_t *)malloc(sizeof(my_item_t));
+    item_ptr->args = args;
+    item_ptr->handler_ptr = hanlder;
     pthread_mutex_lock(&lock);
-    DL_APPEND(task_queue.head, &item);
-    task_queue.size++;
+
+    // DL_APPEND(task_queue->head, item_ptr);
+    if (task_queue->head != NULL)
+    {
+        // (item_ptr)->prev = (task_queue->head)->prev;
+        item_ptr->prev = task_queue->head;
+        assert(task_queue->head != NULL);
+
+        task_queue->head->next = item_ptr;
+        task_queue->head = task_queue->head->next;
+        // (task_queue->head)->prev->next = (item_ptr);
+        // (task_queue->head)->prev = (item_ptr);
+        (task_queue->head)->next = NULL;
+    }
+    else
+    {
+        (task_queue->head) = (item_ptr);
+        (task_queue->head)->prev = (task_queue->head);
+        (task_queue->head)->next = NULL;
+    }
+
+    task_queue->size += 1;
+    assert(task_queue->size >= 0);
     pthread_cond_signal(&cond);
-    printf("size increase: %d\n", task_queue.size);
     pthread_mutex_unlock(&lock);
     return;
     /** TODO: rewrite it to support thread pool **/
@@ -45,35 +74,51 @@ void async_run(void (*hanlder)(int), int args)
 void *wait_to_wakeup(void *args)
 {
 
-    void (*handler)(int);
     int arg;
+    my_item_t *item_ptr;
+    void (*handler)(int);
     for (;;)
     {
-        // pthread_mutex_lock(&lock);
-
+        threads++;
+        pthread_mutex_lock(&lock);
+        //
         printf("I got the lock\n");
-        while (task_queue.size == 0)
+        while (task_queue->size == 0)
         {
             printf("waiting\n");
             pthread_cond_wait(&cond, &lock);
         }
+        assert(task_queue->head != NULL);
 
-        printf("size delete:%d\n", task_queue.size);
-        task_queue.size--;
+        // printf("size before delete:%d\n", task_queue->size);
+        // printf("size before delete111:%d\n", task_queue->size);
+        assert(task_queue->size > 0);
+        task_queue->size -= 1;
+        // printf("size decrease111:%d\n", task_queue->size);
 
-        handler = task_queue.head->handler_ptr;
-        arg = task_queue.head->args;
-        // if (task_queue.head->prev == NULL)
-        // {
+        handler = task_queue->head->handler_ptr;
+        arg = task_queue->head->args;
+        threads--;
 
-        //     printf("fuck the null\n");
-        // };
+        // printf("size decrease:%d\n", task_queue->size);
+        item_ptr = task_queue->head;
+        // DL_DELETE(task_queue->head, task_queue->head);
+        assert((task_queue->head)->prev != NULL);
+        if ((task_queue->head)->prev == (task_queue->head))
+        {
+            assert(task_queue->size == 0);
+            (task_queue->head) = NULL;
+        }
+        else
+        {
+            task_queue->head = task_queue->head->prev;
+            task_queue->head->next = NULL;
+        };
 
-        printf("the args%d\n", task_queue.head->args);
+        // (*handler)(arg);
 
-        printf("size decrease:%d\n", task_queue.size);
-        DL_DELETE(task_queue.head, task_queue.head);
         pthread_mutex_unlock(&lock);
         (*handler)(arg);
+        // free(item_ptr);
     }
 }
