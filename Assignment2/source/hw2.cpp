@@ -13,7 +13,7 @@
 #define ROW 10
 #define COLUMN 50
 #define LOG_NUM 9
-#define UPDATE_INTERVAL 70000
+#define UPDATE_INTERVAL 50000
 
 struct Node
 {
@@ -72,7 +72,6 @@ void *logs_move(void *index)
 		{
 
 			map[logs_pos[a].x][logs_pos[a].y] = ' ';
-			// map[logs_pos[a].x][(logs_pos[a].y + logs_len[a] - 1) % (COLUMN - 1)] = '=';
 			if (logs_pos[a].y == frog.y && logs_pos[a].x == frog.x)
 				is_move = 1;
 			logs_pos[a].y = (logs_pos[a].y + 1) % (COLUMN - 1);
@@ -89,7 +88,6 @@ void *logs_move(void *index)
 		}
 		else if ((logs_pos[a].x % 2) != 0)
 		{
-			// map[logs_pos[a].x][(logs_pos[a].y + 48) % (COLUMN - 1)] = '=';
 			map[logs_pos[a].x][(logs_pos[a].y + logs_len[a]) % (COLUMN - 1)] = ' ';
 			if (logs_pos[a].y == frog.y && logs_pos[a].x == frog.x)
 				is_move = 1;
@@ -108,32 +106,14 @@ void *logs_move(void *index)
 		if (is_quit)
 			return NULL;
 	}
-
-	/*  Move the logs  */
-
-	/*  Check keyboard hits, to change frog's position or quit the game. */
-
-	/*  Check game's status  */
-
-	/*  Print the map on the screen  */
 }
 void *frog_move(void *)
 {
 	while (1)
 	{
-		// usleep(UPDATE_INTERVAL);
 		if (kbhit())
 		{
 			char ch = (char)getchar();
-			// switch (map[frog.x][frog.y])
-			// {
-			// case /* constant-expression */:
-			// 	/* code */
-			// 	break;
-
-			// default:
-			// 	break;
-			// }
 			switch (ch)
 			{
 			case 'w':
@@ -157,12 +137,6 @@ void *frog_move(void *)
 				is_quit = 1;
 				break;
 			default:
-				// if (frog.y < 0 || frog.y >= COLUMN - 1)
-				// {
-				// 	is_quit = 1;
-				// 	break;
-				// }
-				// map[frog.x][frog.y] = '0';
 				break;
 			}
 		}
@@ -209,7 +183,6 @@ int main(int argc, char *argv[])
 		pthread_create(&logs[i], NULL, logs_move, &indexs[i]);
 
 	pthread_create(&frog_ctl, NULL, frog_move, NULL);
-	// pthread_create(&logs[i], NULL, logs_move, &indexs[0]);
 	/*  Display the output for user: win, lose or quit.  */
 	// Print the map into screen
 	while (true)
@@ -229,8 +202,7 @@ int main(int argc, char *argv[])
 
 		if (frog.y < 0 || frog.y >= COLUMN - 1 || frog.x > ROW)
 		{
-			// is_quit = 1;
-			std::cout << "You out of bound" << std::endl;
+			std::cout << "You lost the game!!" << std::endl;
 			break;
 		}
 
@@ -239,7 +211,7 @@ int main(int argc, char *argv[])
 			puts(map[i]);
 		if (frog.x <= 0)
 		{
-			std::cout << "You win the game!" << std::endl;
+			std::cout << "You win the game!!" << std::endl;
 			break;
 		}
 		if (frog.x != ROW)
@@ -250,8 +222,7 @@ int main(int argc, char *argv[])
 			int end = (logs_pos[a].y + logs_len[a] - 1) % (COLUMN - 1);
 			if ((logs_pos[a].y + logs_len[a] > 49 && pos < start && pos > end) || (logs_pos[a].y + logs_len[a] <= 49 && (pos > end || pos < start)))
 			{
-				std::cout << frog.y << "  " << logs_pos[frog.x - 1].y;
-				std::cout << "You drop in river" << std::endl;
+				std::cout << "You lose the game!!" << std::endl;
 				break;
 			}
 		};
