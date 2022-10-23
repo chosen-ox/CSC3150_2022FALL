@@ -4,7 +4,6 @@
 #include <string.h>
 #include <unistd.h>
 #include <time.h>
-// #include <curses.h>
 #include <termios.h>
 #include <fcntl.h>
 
@@ -15,6 +14,7 @@
 #define LOG_NUM 9
 #define UPDATE_INTERVAL 50000
 
+pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 struct Node
 {
 	int x, y;
@@ -68,6 +68,7 @@ void *logs_move(void *index)
 		usleep(UPDATE_INTERVAL);
 		int is_move = 0;
 
+		pthread_mutex_lock(&lock);
 		if (logs_pos[a].x % 2 == 0)
 		{
 
@@ -103,6 +104,7 @@ void *logs_move(void *index)
 				frog.y--;
 			}
 		}
+		pthread_mutex_unlock(&lock);
 		if (is_quit)
 			return NULL;
 	}
@@ -113,6 +115,7 @@ void *frog_move(void *)
 	{
 		if (kbhit())
 		{
+			pthread_mutex_lock(&lock);
 			char ch = (char)getchar();
 			switch (ch)
 			{
@@ -140,6 +143,7 @@ void *frog_move(void *)
 				break;
 			}
 		}
+		pthread_mutex_unlock(&lock);
 		if (is_quit)
 			return NULL;
 	}
@@ -148,6 +152,7 @@ int main(int argc, char *argv[])
 {
 
 	// Initialize the river map and frog's starting position
+
 	memset(map, 0, sizeof(map));
 	int i, j;
 	for (i = 1; i < ROW; ++i)
@@ -188,6 +193,7 @@ int main(int argc, char *argv[])
 	while (true)
 	{
 		usleep(UPDATE_INTERVAL);
+		pthread_mutex_lock(&lock);
 		if (is_quit)
 		{
 			std::cout << "You exit the game." << std::endl;
@@ -207,6 +213,7 @@ int main(int argc, char *argv[])
 		}
 
 		map[frog.x][frog.y] = '0';
+
 		for (i = 0; i <= ROW; ++i)
 			puts(map[i]);
 		if (frog.x <= 0)
@@ -214,6 +221,7 @@ int main(int argc, char *argv[])
 			std::cout << "You win the game!!" << std::endl;
 			break;
 		}
+
 		if (frog.x != ROW)
 		{
 			int a = frog.x - 1;
@@ -226,7 +234,9 @@ int main(int argc, char *argv[])
 				break;
 			}
 		};
+		pthread_mutex_unlock(&lock);
 	};
+	pthread_mutex_unlock(&lock);
 	is_quit = 1;
 	usleep(UPDATE_INTERVAL);
 	usleep(UPDATE_INTERVAL);
