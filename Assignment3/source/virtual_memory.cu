@@ -7,7 +7,7 @@ __device__ void init_invert_page_table(VirtualMemory *vm) {
 
   for (int i = 0; i < vm->PAGE_ENTRIES; i++) {
     vm->invert_page_table[i] = 0x80000000; // invalid := MSB is 1
-    vm->invert_page_table[i + vm->PAGE_ENTRIES] = i;
+    vm->invert_page_table[i + vm->PAGE_ENTRIES] = -1;
   }
 }
 
@@ -39,45 +39,56 @@ __device__ void vm_init(VirtualMemory *vm, uchar *buffer, uchar *storage,
 }
 
 __device__ uchar vm_read(VirtualMemory *vm, u32 addr) {
-
-  u32 offset = addr & 0x3f;
+/* Complete vm_write function to write value into data buffer */
+  // u32 offset = addr & 0x3f;
+  u32 offset = addr & 0x1f;
   u32 tid = addr >> 28;
-  u32 vpn = (addr & 0x0fffffc0) >> 6;
+  // u32 vpn = (addr & 0x0fffffc0) >> 6;
+  u32 vpn = (addr & 0x0fffffff) >> 5;
+  // printf("vpn%d\n", vpn);
   int page_entry = vm_search_vpn(vm, vpn);
   if (page_entry == -1) { 
     ++(*vm->pagefault_num_ptr);
     int lru_idx = vm_get_LRU_idx(vm);
 
     if ((vm->invert_page_table[lru_idx] & 0x80000000) == 0) {
-      vm_swap_to_storage(vm, vm->invert_page_table[lru_idx] & 0x3fffffff, lru_idx);
+      // printf("index%d\n",lru_idx);
+      vm_swap_to_storage(vm, vm->invert_page_table[lru_idx], lru_idx);
     }
     vm_swap_to_data(vm, vpn, lru_idx);
     page_entry = vm_search_vpn(vm, vpn);
   }
   vm_update_queue(vm, page_entry);
+  
+  // printf("vpn:%d vm0%x val:%x, phy:%d, offset:%d\n", vpn, vm->invert_page_table[0], value, page_entry,offset);
 
   return vm->buffer[page_entry * vm->PAGESIZE + offset]; //TODO
 }
 
 __device__ void vm_write(VirtualMemory *vm, u32 addr, uchar value) {
   /* Complete vm_write function to write value into data buffer */
-  u32 offset = addr & 0x3f;
+  // u32 offset = addr & 0x3f;
+  u32 offset = addr & 0x1f;
   u32 tid = addr >> 28;
-  u32 vpn = (addr & 0x0fffffc0) >> 6;
+  // u32 vpn = (addr & 0x0fffffc0) >> 6;
+  u32 vpn = (addr & 0x0fffffff) >> 5;
+  // printf("vpn%d\n", vpn);
   int page_entry = vm_search_vpn(vm, vpn);
   if (page_entry == -1) { 
     ++(*vm->pagefault_num_ptr);
     int lru_idx = vm_get_LRU_idx(vm);
 
     if ((vm->invert_page_table[lru_idx] & 0x80000000) == 0) {
-      vm_swap_to_storage(vm, vm->invert_page_table[lru_idx] & 0x3fffffff, lru_idx);
+      // printf("index%d\n",lru_idx);
+      vm_swap_to_storage(vm, vm->invert_page_table[lru_idx], lru_idx);
     }
     vm_swap_to_data(vm, vpn, lru_idx);
     page_entry = vm_search_vpn(vm, vpn);
   }
   vm_update_queue(vm, page_entry);
-
+  
   vm->buffer[page_entry * vm->PAGESIZE + offset] = value; //TODO
+  // printf("vpn:%d vm0%x val:%x, phy:%d, offset:%d\n", vpn, vm->invert_page_table[0], value, page_entry,offset);
 }
 
 
@@ -101,7 +112,11 @@ __device__ int vm_search_vpn(VirtualMemory *vm, u32 vpn) {
  
 }
 __device__ void vm_update_pt(VirtualMemory *vm, u32 vpn, int page_entry) {
-  vm->invert_page_table[page_entry] = vpn;
+    vm->invert_page_table[page_entry] = vpn;
+  // if (vm->invert_page_table[0] != 0) {
+    // printf("ENTRY:%d vpn:%d Entry0: %d\n", page_entry, vm->invert_page_table[page_entry], vm->invert_page_table[0]);
+  // }
+
 }
 __device__ void vm_update_queue(VirtualMemory *vm, int page_entry) {
   vm->time_counter++;
@@ -123,7 +138,7 @@ __device__ void vm_swap_to_storage(VirtualMemory *vm, u32 vpn, int page_entry) {
   for (int i = 0; i < vm->PAGESIZE; i++) {
     vm->storage[vpn * vm->PAGESIZE + i] = vm->buffer[page_entry * vm->PAGESIZE + i];
   }
-  vm->invert_page_table[page_entry] = 0x80000000;
+  // vm->invert_page_table[page_entry] = 0x80000000;
 }
 __device__ void vm_swap_to_data(VirtualMemory *vm, u32 vpn, int page_entry) {
   for (int i = 0; i < vm->PAGESIZE; i++) {
