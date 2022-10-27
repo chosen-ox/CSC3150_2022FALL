@@ -40,11 +40,10 @@ __device__ void vm_init(VirtualMemory *vm, uchar *buffer, uchar *storage,
 
 __device__ uchar vm_read(VirtualMemory *vm, u32 addr) {
 /* Complete vm_write function to write value into data buffer */
-  // u32 offset = addr & 0x3f;
   u32 offset = addr & 0x1f;
   u32 tid = addr >> 28;
-  // u32 vpn = (addr & 0x0fffffc0) >> 6;
-  u32 vpn = addr / 32;
+  u32 vpn = (addr & 0x0fffffff) >> 5;
+  // u32 vpn = addr / 32;
   // printf("vpn%d\n", vpn);
   int page_entry = vm_search_vpn(vm, vpn);
   // printf("search %d", vm_search_vpn(vm, 3072));
@@ -68,11 +67,10 @@ __device__ uchar vm_read(VirtualMemory *vm, u32 addr) {
 
 __device__ void vm_write(VirtualMemory *vm, u32 addr, uchar value) {
   /* Complete vm_write function to write value into data buffer */
-  // u32 offset = addr & 0x3f;
   u32 offset = addr & 0x1f;
   u32 tid = addr >> 28;
-  // u32 vpn = (addr & 0x0fffffc0) >> 6;
-  u32 vpn =  addr >> 5;
+  u32 vpn = (addr & 0x0fffffff) >> 5;
+  // u32 vpn =  addr >> 5;
   // printf("vpn%d\n", vpn);
   int page_entry = vm_search_vpn(vm, vpn);
   if (page_entry == -1) { 
