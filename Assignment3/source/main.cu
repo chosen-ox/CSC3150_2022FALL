@@ -28,8 +28,11 @@ __device__ __managed__ uchar input[STORAGE_SIZE];
 // memory allocation for virtual_memory
 // secondary memory
 __device__ __managed__ uchar storage[STORAGE_SIZE];
+
+__device__ __managed__ u32 lru_array[PHYSICAL_MEM_SIZE / PAGE_SIZE];
 // page table
 extern __shared__ u32 pt[];
+
 
 __device__ void user_program(VirtualMemory *vm, uchar *input, uchar *results,
                              int input_size);
@@ -43,7 +46,7 @@ __global__ void mykernel(int input_size) {
   VirtualMemory vm;
   vm_init(&vm, data, storage, pt, &pagefault_num, PAGE_SIZE,
           INVERT_PAGE_TABLE_SIZE, PHYSICAL_MEM_SIZE, STORAGE_SIZE,
-          PHYSICAL_MEM_SIZE / PAGE_SIZE);
+          PHYSICAL_MEM_SIZE / PAGE_SIZE, lru_array);
 
   // user program the access pattern for testing paging
   user_program(&vm, input, results, input_size);
