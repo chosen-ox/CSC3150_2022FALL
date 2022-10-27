@@ -7,7 +7,7 @@ __device__ void init_invert_page_table(VirtualMemory *vm) {
 
   for (int i = 0; i < vm->PAGE_ENTRIES; i++) {
     vm->invert_page_table[i] = 0x80000000; // invalid := MSB is 1
-    vm->invert_page_table[i + vm->PAGE_ENTRIES] = -1;
+    // vm->invert_page_table[i + vm->PAGE_ENTRIES] = -1;
   }
 }
 
@@ -44,9 +44,10 @@ __device__ uchar vm_read(VirtualMemory *vm, u32 addr) {
   u32 offset = addr & 0x1f;
   u32 tid = addr >> 28;
   // u32 vpn = (addr & 0x0fffffc0) >> 6;
-  u32 vpn = (addr & 0x0fffffff) >> 5;
+  u32 vpn = addr / 32;
   // printf("vpn%d\n", vpn);
   int page_entry = vm_search_vpn(vm, vpn);
+  // printf("search %d", vm_search_vpn(vm, 3072));
   if (page_entry == -1) { 
     ++(*vm->pagefault_num_ptr);
     int lru_idx = vm_get_LRU_idx(vm);
@@ -60,7 +61,7 @@ __device__ uchar vm_read(VirtualMemory *vm, u32 addr) {
   }
   vm_update_queue(vm, page_entry);
   
-  // printf("vpn:%d vm0%x val:%x, phy:%d, offset:%d\n", vpn, vm->invert_page_table[0], value, page_entry,offset);
+  // printf("vpn:%d vm0%x  phy:%d, offset:%d\n", vpn, vm->invert_page_table[0], page_entry,offset);
 
   return vm->buffer[page_entry * vm->PAGESIZE + offset]; //TODO
 }
@@ -71,7 +72,7 @@ __device__ void vm_write(VirtualMemory *vm, u32 addr, uchar value) {
   u32 offset = addr & 0x1f;
   u32 tid = addr >> 28;
   // u32 vpn = (addr & 0x0fffffc0) >> 6;
-  u32 vpn = (addr & 0x0fffffff) >> 5;
+  u32 vpn =  addr >> 5;
   // printf("vpn%d\n", vpn);
   int page_entry = vm_search_vpn(vm, vpn);
   if (page_entry == -1) { 
@@ -95,8 +96,11 @@ __device__ void vm_write(VirtualMemory *vm, u32 addr, uchar value) {
 
 __device__ void vm_snapshot(VirtualMemory *vm, uchar *results, int offset,
                             int input_size) {
-  /* Complete snapshot function togther with vm_read to load elements from data
-   * to result buffer */
+  for (int i=0; i<input_size;i++){
+    int value = vm_read(vm,i);
+    results[i+offset] = value;
+  }
+
 
 }
 
