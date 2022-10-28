@@ -41,7 +41,6 @@ __device__ void vm_init(VirtualMemory *vm, uchar *buffer, uchar *storage,
 __device__ uchar vm_read(VirtualMemory *vm, u32 addr) {
 /* Complete vm_write function to write value into data buffer */
   u32 offset = addr & 0x1f;
-  u32 tid = addr >> 28;
   u32 vpn = (addr & 0x0fffffff) >> 5;
   // u32 vpn = addr / 32;
   // printf("vpn%d\n", vpn);
@@ -68,7 +67,6 @@ __device__ uchar vm_read(VirtualMemory *vm, u32 addr) {
 __device__ void vm_write(VirtualMemory *vm, u32 addr, uchar value) {
   /* Complete vm_write function to write value into data buffer */
   u32 offset = addr & 0x1f;
-  u32 tid = addr >> 28;
   u32 vpn = (addr & 0x0fffffff) >> 5;
   // u32 vpn =  addr >> 5;
   // printf("vpn%d\n", vpn);
@@ -77,8 +75,8 @@ __device__ void vm_write(VirtualMemory *vm, u32 addr, uchar value) {
     ++(*vm->pagefault_num_ptr);
     int lru_idx = vm_get_LRU_idx(vm);
 
+
     if ((vm->invert_page_table[lru_idx] & 0x80000000) == 0) {
-      // printf("index%d\n",lru_idx);
       vm_swap_to_storage(vm, vm->invert_page_table[lru_idx], lru_idx);
     }
     vm_swap_to_data(vm, vpn, lru_idx);
@@ -105,8 +103,10 @@ __device__ void vm_snapshot(VirtualMemory *vm, uchar *results, int offset,
 __device__ int vm_search_vpn(VirtualMemory *vm, u32 vpn) {
   for (int i = 0; i < vm->PAGE_ENTRIES; i++) {
     if ((vm->invert_page_table[i] & 0x80000000) == 0) {
-      if ((vm->invert_page_table[i] & 0x3fffffff) == vpn) {
-        return i;
+      if ((vm->invert_page_table[i]>>28) == threadIdx.x) {
+        if ((vm->invert_page_table[i] & 0x0fffffff) == vpn) {
+          return i;
+        }
       }
     }
   }
@@ -114,11 +114,7 @@ __device__ int vm_search_vpn(VirtualMemory *vm, u32 vpn) {
  
 }
 __device__ void vm_update_pt(VirtualMemory *vm, u32 vpn, int page_entry) {
-    vm->invert_page_table[page_entry] = vpn;
-  // if (vm->invert_page_table[0] != 0) {
-    // printf("ENTRY:%d vpn:%d Entry0: %d\n", page_entry, vm->invert_page_table[page_entry], vm->invert_page_table[0]);
-  // }
-
+    vm->invert_page_table[page_entry] = vpn | (threadIdx.x << 28);
 }
 __device__ void vm_update_queue(VirtualMemory *vm, int page_entry) {
   vm->time_counter++;
