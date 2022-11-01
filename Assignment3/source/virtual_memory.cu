@@ -13,6 +13,7 @@ __device__ void init_invert_page_table(VirtualMemory *vm) {
 
 __device__ void init_swap_page_table(VirtualMemory * vm) {
   int page_entrys = vm->STORAGE_SIZE/vm->PAGESIZE; 
+  // printf("swap size %d\n", page_entrys);
   for (int i = 0; i < page_entrys; i++) {
     vm->swap_page_table[i] = 0x80000000;
   }
@@ -63,6 +64,7 @@ __device__ uchar vm_read(VirtualMemory *vm, u32 addr) {
     if (vpn_old != 0x80000000) {
       int page_entry_disk = vm_search_swap_table(vm, vpn);
       if (page_entry_disk == -1) {
+        printf("oldvpn%d vpn%d\n", vpn_old ,vpn);
         // perror("Not find the corresponding entry in swap field!");
         // exit(-1);
         return 0;
@@ -101,14 +103,16 @@ __device__ void vm_write(VirtualMemory *vm, u32 addr, uchar value) {
     if (vpn_old != 0x80000000) {
       int page_entry_disk = vm_search_swap_table(vm, vpn);
       if (page_entry_disk == -1) {
+        // printf("%d\n", vpn);
         // if (vpn >= 5120) {
         //   printf("az\n");
         // }
+
+        // printf("oldvpn%d vpn%d\n", vpn_old ,vpn);
         page_entry_disk = vm_find_empty_entry_disk(vm);
         vm_swap_to_storage(vm, lru_idx, page_entry_disk);
       }
       else {
-        printf("get here?%d\n", addr);
         uchar *temp_entry = (uchar *) malloc(1<<5);
         for (int i = 0; i < vm->PAGESIZE; i++) {
           temp_entry[i] = vm->storage[page_entry_disk * 32 + i];
@@ -134,8 +138,8 @@ __device__ void vm_write(VirtualMemory *vm, u32 addr, uchar value) {
 __device__ void vm_snapshot(VirtualMemory *vm, uchar *results, int offset,
                             int input_size) {
   for (int i=0; i<input_size;i++){
-    int value = vm_read(vm,i);
-    results[i+offset] = value;
+    int value = vm_read(vm,i + offset);
+    results[i] = value;
   }
 
 
@@ -178,6 +182,7 @@ __device__ void vm_swap_to_storage(VirtualMemory *vm, int page_entry, int page_e
   for (int i = 0; i < vm->PAGESIZE; i++) {
     vm->storage[page_entry_disk * vm->PAGESIZE + i] = vm->buffer[page_entry * vm->PAGESIZE + i];
   }
+  // printf("vpn:%d swap index:%d\n", page_entry, page_entry_disk);
 }
 __device__ void vm_swap_to_data(VirtualMemory *vm, uchar *temp_entry, int page_entry) {
   for (int i = 0; i < vm->PAGESIZE; i++) {
