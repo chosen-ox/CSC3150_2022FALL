@@ -16,7 +16,7 @@
 // 32 KB in shared memory
 #define PHYSICAL_MEM_SIZE (1 << 15)
 // 128 KB in global memory
-#define STORAGE_SIZE (1 << 17)
+#define STORAGE_SIZE (1 << 19)
 
 //// count the pagefault times
 __device__ __managed__ int pagefault_num = 0;
@@ -28,6 +28,7 @@ __device__ __managed__ uchar input[STORAGE_SIZE];
 // memory allocation for virtual_memory
 // secondary memory
 __device__ __managed__ uchar storage[STORAGE_SIZE];
+__device__ __managed__ u32 swap_page_table[STORAGE_SIZE / PAGE_SIZE];
 
 __device__ __managed__ u32 lru_array[PHYSICAL_MEM_SIZE / PAGE_SIZE];
 // page table
@@ -46,7 +47,7 @@ __global__ void mykernel(int input_size) {
   VirtualMemory vm;
   vm_init(&vm, data, storage, pt, &pagefault_num, PAGE_SIZE,
           INVERT_PAGE_TABLE_SIZE, PHYSICAL_MEM_SIZE, STORAGE_SIZE,
-          PHYSICAL_MEM_SIZE / PAGE_SIZE, lru_array);
+          PHYSICAL_MEM_SIZE / PAGE_SIZE, lru_array, swap_page_table);
 
   // user program the access pattern for testing paging
   user_program(&vm, input, results, input_size);
