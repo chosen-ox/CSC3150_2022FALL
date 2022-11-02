@@ -66,8 +66,7 @@ __device__ uchar vm_read(VirtualMemory *vm, u32 addr) {
     if (vpn_old != 0x80000000) {
       int page_entry_disk = vm_search_swap_table(vm, vpn);
       if (page_entry_disk == -1) {
-        printf("oldvpn%d vpn%d\n", vpn_old ,vpn);
-        // perror("Not find the corresponding entry in swap field!");
+        printf("Not find the corresponding entry in swap field!\n");
         // exit(-1);
         return 0;
       }
