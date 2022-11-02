@@ -148,10 +148,8 @@ __device__ void vm_snapshot(VirtualMemory *vm, uchar *results, int offset,
 __device__ int vm_search_vpn(VirtualMemory *vm, u32 vpn) {
   for (int i = 0; i < vm->PAGE_ENTRIES; i++) {
     if ((vm->invert_page_table[i] & 0x80000000) == 0) {
-      if ((vm->invert_page_table[i]>>28) == threadIdx.x) {
-        if ((vm->invert_page_table[i] & 0x0fffffff) == vpn) {
-          return i;
-        }
+      if ((vm->invert_page_table[i] & 0x0fffffff) == vpn) {
+        return i;
       }
     }
   }
@@ -159,7 +157,7 @@ __device__ int vm_search_vpn(VirtualMemory *vm, u32 vpn) {
  
 }
 __device__ void vm_update_pt(VirtualMemory *vm, u32 vpn, int page_entry) {
-    vm->invert_page_table[page_entry] = vpn | (threadIdx.x << 28);
+    vm->invert_page_table[page_entry] = vpn;
 }
 __device__ void vm_update_queue(VirtualMemory *vm, int page_entry) {
   vm->time_counter++;
