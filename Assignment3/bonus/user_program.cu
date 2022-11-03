@@ -5,49 +5,16 @@
 __device__ void user_program(VirtualMemory *vm, uchar *input, uchar *results,
                              int input_size) {
   for (int i = 0; i < input_size; i++){
-    if (threadIdx.x == 0) {
       vm_write(vm, i, input[i]);
-    }
-    __syncthreads();
-    if (threadIdx.x == 1) {
-      vm_write(vm, i, input[i]);
-    }
-    __syncthreads();
-    if (threadIdx.x == 2) {
-      vm_write(vm, i, input[i]);
-    }
-    __syncthreads();
-    if (threadIdx.x == 3) {
-      vm_write(vm, i, input[i]);
-    }
-    __syncthreads();
   }
 
 
-  // for (int i = input_size - 1; i >= input_size - 32769; i--){
-  //   if (threadIdx.x == 0) {
-  //     vm_read(vm, i);
-  //   }
-  //   __syncthreads();
-  //   if (threadIdx.x == 1) {
-  //     vm_read(vm, i);
-  //   }
-  //   __syncthreads();
-  //   if (threadIdx.x == 2) {
-  //     vm_read(vm, i);
-  //   }
-  //   __syncthreads();
-  //   if (threadIdx.x == 3) {
-  //     vm_read(vm, i);
-  //   }
-  //   __syncthreads();
+  for (int i = input_size - 1; i >= input_size - 32769; i--){
+      vm_read(vm, i);
 
-  //   // int value = vm_read(vm, i);
-  // }
-  __syncthreads();
-//   if (threadIdx.x == 3) {
-//     vm_snapshot(vm, results, 0, input_size);
-// }
+  }
+  vm_snapshot(vm, results, 0, input_size);
+
  
 }
 

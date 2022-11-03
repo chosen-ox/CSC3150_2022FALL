@@ -49,7 +49,8 @@ __device__ void vm_init(VirtualMemory *vm, uchar *buffer, uchar *storage,
   init_swap_page_table(vm);
 }
 
-__device__ uchar vm_read(VirtualMemory *vm, u32 addr) {
+
+__device__ uchar vm_atomic_read(VirtualMemory *vm, u32 addr) {
 /* Complete vm_write function to write value into data buffer */
   u32 offset = addr & 0x1f;
   u32 vpn = (addr & 0x0fffffff) >> 5;
@@ -89,7 +90,30 @@ __device__ uchar vm_read(VirtualMemory *vm, u32 addr) {
   return vm->buffer[page_entry * vm->PAGESIZE + offset]; //TODO
 }
 
-__device__ void vm_write(VirtualMemory *vm, u32 addr, uchar value) {
+__device__ uchar vm_read(VirtualMemory *vm, u32 addr) {
+  int val;
+  if (threadIdx.x == 0) {
+    val = vm_atomic_read(vm, addr);
+  }
+  __syncthreads();
+  if (threadIdx.x == 1) {
+    val = vm_atomic_read(vm, addr);
+  }
+  __syncthreads();
+  if (threadIdx.x == 2) {
+    val = vm_atomic_read(vm, addr);
+  }
+  __syncthreads();
+  if (threadIdx.x == 3) {
+    val = vm_atomic_read(vm, addr);
+  }
+  __syncthreads();
+
+  return val;
+}
+
+
+__device__ void vm_atomic_write(VirtualMemory *vm, u32 addr, uchar value) {
   /* Complete vm_write function to write value into data buffer */
   u32 offset = addr & 0x1f;
   u32 vpn = (addr & 0x0fffffff) >> 5;
@@ -135,6 +159,27 @@ __device__ void vm_write(VirtualMemory *vm, u32 addr, uchar value) {
   vm->buffer[page_entry * vm->PAGESIZE + offset] = value; //TODO
   // printf("vpn:%d vm0%x val:%x, phy:%d, offset:%d\n", vpn, vm->invert_page_table[0], value, page_entry,offset);
 }
+
+__device__ void vm_write(VirtualMemory *vm, u32 addr, uchar value) {
+  if (threadIdx.x == 0) {
+      vm_atomic_write(vm, addr, value);
+    }
+    __syncthreads();
+    if (threadIdx.x == 1) {
+      vm_atomic_write(vm, addr, value);
+    }
+    __syncthreads();
+    if (threadIdx.x == 2) {
+      vm_atomic_write(vm, addr, value);
+    }
+    __syncthreads();
+    if (threadIdx.x == 3) {
+      vm_atomic_write(vm, addr, value);
+    }
+    __syncthreads();
+
+}
+
 
 
 
