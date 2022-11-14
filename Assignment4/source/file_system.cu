@@ -3,6 +3,7 @@
 #include <cuda_runtime.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "utils.h"
 
 __device__ __managed__ u32 gtime = 0;
 
@@ -13,7 +14,7 @@ __device__ void fs_init(FileSystem *fs, uchar *volume, int SUPERBLOCK_SIZE,
 							int MAX_FILE_NUM, int MAX_FILE_SIZE, int FILE_BASE_ADDRESS)
 {
   // init variables
-  fs->volume = volume;
+  // fs->volume = volume;
 
   // init constants
   fs->SUPERBLOCK_SIZE = SUPERBLOCK_SIZE;
@@ -25,18 +26,32 @@ __device__ void fs_init(FileSystem *fs, uchar *volume, int SUPERBLOCK_SIZE,
   fs->MAX_FILE_NUM = MAX_FILE_NUM;
   fs->MAX_FILE_SIZE = MAX_FILE_SIZE;
   fs->FILE_BASE_ADDRESS = FILE_BASE_ADDRESS;
+
+  // super block 4096 byte
   // init free space management
+  // 0-127 bytes
   for (int i = 0; i < 1024; i++) {
-    *volume++ = '\0';
+    fs->SUPERBLOCK[i] = 0;
   }
-  /*
-    FCB structrue
-      byte 0: create time
-      byte 1: last modified
-      byte 2: size
-      byte 3~22: name 
-  */
-  int fcb_base = fs->SUPERBLOCK_SIZE;
+  // printf("%d\n", fs->SUPERBLOCK[0]);
+  // 128-1151 bytes 
+  // modification time sort
+  // prev: >>10
+  // next: &0x3ff 
+  // head: 1152 bytes
+  // tail: 1153 bytes
+  
+
+
+  // FCB *ptr = (FCB *) &fs->volume[fcb_base];
+
+  for (int i = 0; i < 1024; i++) {
+    set_address(&fs->FCBS[i], i);  
+  }
+  // for (int i = 0; i < 1024; i++) {
+  //   printf("%x\n", get_address(fs->FCBS[i]));
+  // }
+  
 
 }
 
@@ -44,7 +59,37 @@ __device__ void fs_init(FileSystem *fs, uchar *volume, int SUPERBLOCK_SIZE,
 
 __device__ u32 fs_open(FileSystem *fs, char *s, int op)
 {
-	/* Implement open operation here */
+  int empty_block = -1;
+  for (int i = 0; i < 1024; i++) {
+    if (fs->SUPERBLOCK[i] == 1) {
+        if (cmp_str(fs->FCBS[i].name, s)) {
+          return i;
+        }
+    }
+    else {
+      empty_block = i;
+    }
+  }
+
+  if (op == G_READ) {
+    printf("No such file!!!\n");
+    return 0;
+  }
+  else if (op == G_WRITE) {
+    if (empty_block == -1) {
+      printf("No more space to create new file!!!\n");
+      return 0;
+    }
+    else {
+      fs->SUPERBLOCK[empty_block] = 1;
+      copy_str(s, fs->FCBS[empty_block].name);
+      return empty_block;
+    }
+  }
+  else {
+    printf("Please input correct op!!!\n");
+    return 0;
+  }
 }
 
 
@@ -52,7 +97,7 @@ __device__ void fs_read(FileSystem *fs, uchar *output, u32 size, u32 fp)
 {
 	/* Implement read operation here */
   for (int i = 0; i < size; i++) {
-    output[i] = fs->volume[fp+i];
+    // output[i] = fs->volume[fp+i];
   }
 }
 
@@ -63,7 +108,7 @@ __device__ u32 fs_write(FileSystem *fs, uchar* input, u32 size, u32 fp)
   //   printf("%c\n", ptr[i]);
   // }
   for (int i = 0; i < size+1; i++) {
-    fs->volume[fp + i] = input[i];
+    // fs->volume[fp + i] = input[i];
   }
 	/* Implement write operation here */
 }

@@ -36,13 +36,13 @@ __device__ void user_program(FileSystem *fs, uchar *input, uchar *output);
 __global__ void mykernel(uchar *input, uchar *output) {
 
   // Initilize the file system	
-  FileSystem fs;
-  fs_init(&fs, volume, SUPERBLOCK_SIZE, FCB_SIZE, FCB_ENTRIES, 
+  FileSystem* fs = new FileSystem();
+  fs_init(fs, volume, SUPERBLOCK_SIZE, FCB_SIZE, FCB_ENTRIES, 
 			VOLUME_SIZE,STORAGE_BLOCK_SIZE, MAX_FILENAME_SIZE, 
 			MAX_FILE_NUM, MAX_FILE_SIZE, FILE_BASE_ADDRESS);
 
   // user program the access pattern for testing file operations
-  user_program(&fs, input, output);
+  user_program(fs, input, output);
 }
 
 __host__ void write_binaryFile(char *fileName, void *buffer, int bufferSize)
