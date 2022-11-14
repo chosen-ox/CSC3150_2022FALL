@@ -48,10 +48,6 @@ __device__ void fs_init(FileSystem *fs, uchar *volume, int SUPERBLOCK_SIZE,
   for (int i = 0; i < 1024; i++) {
     set_address(&fs->FCBS[i], i);  
   }
-  // for (int i = 0; i < 1024; i++) {
-  //   printf("%x\n", get_address(fs->FCBS[i]));
-  // }
-  
 
 }
 
@@ -83,6 +79,7 @@ __device__ u32 fs_open(FileSystem *fs, char *s, int op)
     else {
       fs->SUPERBLOCK[empty_block] = 1;
       copy_str(s, fs->FCBS[empty_block].name);
+      fs->FCBS[empty_block].create_time = gtime++;
       return empty_block;
     }
   }
@@ -95,30 +92,46 @@ __device__ u32 fs_open(FileSystem *fs, char *s, int op)
 
 __device__ void fs_read(FileSystem *fs, uchar *output, u32 size, u32 fp)
 {
-	/* Implement read operation here */
-  for (int i = 0; i < size; i++) {
-    // output[i] = fs->volume[fp+i];
+	for (int i = 0; i < size; i++) {
+    output[i] = fs->FILES[get_address(fs->FCBS[fp])][i];
   }
 }
 
 __device__ u32 fs_write(FileSystem *fs, uchar* input, u32 size, u32 fp)
 {
 
-  // for (int i =0; i < 1024; i++) {
-  //   printf("%c\n", ptr[i]);
-  // }
-  for (int i = 0; i < size+1; i++) {
-    // fs->volume[fp + i] = input[i];
+
+  fs->FCBS[fp].modified_time = gtime++;
+  set_size(&fs->FCBS[fp], size);
+  for (int i =0; i < 1024; i++) {
+    fs->FILES[get_address(fs->FCBS[fp])][i] = '\0';
   }
-	/* Implement write operation here */
+  for (int i = 0; i < size; i++) {
+    fs->FILES[get_address(fs->FCBS[fp])][i] = input[i];
+  }
 }
 __device__ void fs_gsys(FileSystem *fs, int op)
 {
   if (op == LS_D) {
-
+    FCB valid_fcbs[1024];
+    int offset = 0;
+    for (int i = 0; i < 1024; i++) {
+      if (fs->SUPERBLOCK[i] == 1) {
+        valid_fcbs[offset++] = fs->FCBS[i];
+      }
+    }
+    print_array_by_date(valid_fcbs, offset);
   }
-  
   else if (op == LS_S) {
+    FCB valid_fcbs[1024];
+    int offset = 0;
+    for (int i = 0; i < 1024; i++) {
+      if (fs->SUPERBLOCK[i] == 1) {
+        valid_fcbs[offset++] = fs->FCBS[i];
+      }
+    }
+    print_array_by_size(valid_fcbs, offset);
+
 
   }
 	/* Implement LS_D and LS_S operation here */
@@ -126,5 +139,26 @@ __device__ void fs_gsys(FileSystem *fs, int op)
 
 __device__ void fs_gsys(FileSystem *fs, int op, char *s)
 {
-	/* Implement rm operation here */
+	if (op == RM) {
+    int file = -1;
+    for (int i = 0; i < 1024; i++) {
+      if (fs->SUPERBLOCK[i] == 1) {
+        if (cmp_str(fs->FCBS[i].name, s)) {
+          file = i;
+        }
+      }
+    }
+
+    if (file == - 1) {
+      printf("no such file to delete");
+    }
+    else {
+      for (int i = 0; i < 1024; i++) {
+        fs->FILES[get_address(fs->FCBS[file])][i] = '\0';
+      }
+      fs->SUPERBLOCK[file] = 0;
+
+    }
+
+  }
 }

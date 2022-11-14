@@ -37,4 +37,19 @@ __device__ void copy_str(char* ori, char* dst) {
   }
   dst[i] = '\0';
 }
+
+__device__ void print_array_by_date(FCB *fcbs, int len) {
+  printf("===sort by modified time===\n");
+  for (int i = 0; i < len; i++) {
+    printf("%s  num:%d\n", fcbs[i].name, get_address(fcbs[i]));
+  }
+}
+
+
+__device__ void print_array_by_size(FCB *fcbs, int len) {
+  printf("===sort by file size===\n");
+  for (int i = 0; i < len; i++) {
+    printf("%s %d\n", fcbs[i].name, get_size(fcbs[i]));
+  }
+}
 #endif
