@@ -14,8 +14,18 @@ typedef uint32_t u32;
 #define LS_S 1
 #define RM 2
 
+typedef struct FCB {
+	char name[20];
+	int address_size;//0-15 size, 16-31 addr
+	int create_time;
+	int modified_time;	
+} FCB;
+
 struct FileSystem {
-	uchar *volume;
+	int SUPERBLOCK[1024];
+	FCB FCBS[1024];
+	uchar FILES[1024][1024];
+
 	int SUPERBLOCK_SIZE;
 	int FCB_SIZE;
 	int FCB_ENTRIES;
