@@ -13,6 +13,25 @@ typedef uint32_t u32;
 #define LS_D 0
 #define LS_S 1
 #define RM 2
+#define MKDIR 3
+# define CD 4
+#define CD_P 5
+#define RM_RF 6
+#define PWD 7
+
+#define VALID(x) (x & 0b1)
+#define SET_VALID(x) ((x) |= (0b1))
+#define DIR(x) (x & 0b10)
+#define SET_DIR(x) ((x) |= (0b10))
+#define	WD(x) (x & 0b100) 
+#define SET_WD(x) ((x) |= (0b100))
+#define ROOT(x) (x & 0b1000)
+#define SET_ROOT(x) ((x) |= (0b100))
+#define PARENT(x) (x >>22)
+#define SET_PARENT(x, p) {\
+	(x) &= 0x003fffff;\
+	(x) |= (p) << 22;\
+}
 
 typedef struct FCB {
 	char name[20];

@@ -48,7 +48,7 @@ __device__ void copy_str(char* ori, char* dst) {
 __device__ void print_array_by_date(FCB *fcbs, int len) {
   printf("===sort by modified time===\n");
   for (int i = 0; i < len; i++) {
-    printf("%s  num:%d\n", fcbs[i].name, get_address(fcbs[i]));
+    printf("%s\n", fcbs[i].name);
   }
 }
 
