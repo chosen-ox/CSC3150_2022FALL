@@ -120,6 +120,7 @@ __device__ void fs_gsys(FileSystem *fs, int op)
         valid_fcbs[offset++] = fs->FCBS[i];
       }
     }
+    sort_by_date(valid_fcbs, offset);
     print_array_by_date(valid_fcbs, offset);
   }
   else if (op == LS_S) {
@@ -130,6 +131,7 @@ __device__ void fs_gsys(FileSystem *fs, int op)
         valid_fcbs[offset++] = fs->FCBS[i];
       }
     }
+    sort_by_size(valid_fcbs, offset);
     print_array_by_size(valid_fcbs, offset);
 
 
