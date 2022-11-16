@@ -147,7 +147,7 @@ __device__ void rm_DIR(FileSystem *fs, int block) {
     cur_idx = queue[cur_ptr++];
     for (int i = 0; i < 1024; i++) {
       if (VALID(fs->SUPERBLOCK[i])) {
-        if (~ROOT(fs->SUPERBLOCK[i])) {
+        if (!ROOT(fs->SUPERBLOCK[i])) {
           if (PARENT(fs->SUPERBLOCK[i]) == cur_idx) {
             if (DIR(fs->SUPERBLOCK[i])) {
               queue[ptr++] = i;
@@ -166,6 +166,8 @@ __device__ void rm_DIR(FileSystem *fs, int block) {
       fs->FILES[get_address(fs->FCBS[cur_idx])][j] = '\0';
     }
     RESET_VALID(fs->SUPERBLOCK[cur_idx]);
+    if (!ROOT(fs->SUPERBLOCK[cur_idx])) 
+    set_size(&fs->FCBS[PARENT(fs->SUPERBLOCK[cur_idx])], get_size(fs->FCBS[PARENT(fs->SUPERBLOCK[cur_idx])]) - get_len(fs->FCBS[cur_idx].name));
 
   }
 }
