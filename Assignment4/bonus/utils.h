@@ -6,8 +6,8 @@ __device__ int get_len(char * s) {
     if (s[i] == '\0') {
       return i + 1;
     }
-    return 20;
   }
+  return 20;
 }
 __device__ void get_WD(FileSystem * fs, int *WD) {
   for (int i =0; i < 1024; i++) {
@@ -75,7 +75,7 @@ __device__ void copy_str(char* ori, char* dst) {
 __device__ void print_array_by_date(FileSystem *fs, FCB *fcbs, int len) {
   printf("===sort by modified time===\n");
   for (int i = 0; i < len; i++) {
-    if (DIR(fs->SUPERBLOCK[i])) {
+    if (DIR(fs->SUPERBLOCK[get_address(fcbs[i])])) {
       printf("%s d\n", fcbs[i].name);
     }
     else {
@@ -89,7 +89,6 @@ __device__ void print_array_by_size(FileSystem *fs, FCB *fcbs, int len) {
   printf("===sort by file size===\n");
   for (int i = 0; i < len; i++) {
     if (DIR(fs->SUPERBLOCK[get_address(fcbs[i])])) {
-      printf("address%d\n", get_address(fcbs[i]));
       printf("%s %d d\n", fcbs[i].name, get_size(fcbs[i]));
     }
     else {

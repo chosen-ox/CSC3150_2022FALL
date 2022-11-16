@@ -56,16 +56,35 @@ __device__ void fs_init(FileSystem *fs, uchar *volume, int SUPERBLOCK_SIZE,
 
 __device__ u32 fs_open(FileSystem *fs, char *s, int op)
 {
+  int WD[2];
+  get_WD(fs, WD);
   int empty_block = -1;
-  for (int i = 0; i < 1024; i++) {
-    if (VALID(fs->SUPERBLOCK[i])) {
-        if (cmp_str(fs->FCBS[i].name, s)) {
+  if (WD[0] == -1) {
+    for (int i = 0; i < 1024; i++) {
+      if (VALID(fs->SUPERBLOCK[i])) {
+        if (ROOT(fs->SUPERBLOCK[i])) {
+          if (cmp_str(fs->FCBS[i].name, s)) 
           return i;
         }
+      }
+      else {
+        empty_block = i;
+      }
     }
-    else {
-      empty_block = i;
+  }
+  else {
+    for (int i = 0; i < 1024; i++) {
+      if (VALID(fs->SUPERBLOCK[i])) {
+        if (!ROOT(fs->SUPERBLOCK[i]) && PARENT(fs->SUPERBLOCK[i]) == WD[0]) {
+          if (cmp_str(fs->FCBS[i].name, s)) 
+            return i;
+        }
+      }
+      else {
+        empty_block = i;
+      }
     }
+
   }
 
   if (op == G_READ) {
@@ -83,6 +102,14 @@ __device__ u32 fs_open(FileSystem *fs, char *s, int op)
       copy_str(s, fs->FCBS[empty_block].name);
       fs->FCBS[empty_block].create_time = gtime++;
       fs->FCBS[empty_block].modified_time = 0;
+      if (WD[0] != -1) {
+      SET_PARENT(fs->SUPERBLOCK[empty_block], WD[0]);
+      set_size(&fs->FCBS[WD[0]], get_size(fs->FCBS[WD[0]]) + get_len(s));
+      // printf("size:%d\n", get_size(fs->FCBS[WD[0]]) + get_len(s));
+      }
+      else {
+        SET_ROOT(fs->SUPERBLOCK[empty_block]);
+      }
       return empty_block;
     }
   }
@@ -118,10 +145,23 @@ __device__ void fs_gsys(FileSystem *fs, int op)
   if (op == LS_D) {
     FCB valid_fcbs[1024];
     int offset = 0;
-
-    for (int i = 0; i < 1024; i++) {
-      if (VALID(fs->SUPERBLOCK[i])) {
-        valid_fcbs[offset++] = fs->FCBS[i];
+    int WD[2];
+    get_WD(fs, WD);
+    if (WD[0] != - 1) {
+      for (int i = 0; i < 1024; i++) {
+        if (VALID(fs->SUPERBLOCK[i])) {
+          if (PARENT(fs->SUPERBLOCK[i]) == WD[0] && !ROOT(fs->SUPERBLOCK[i])) {
+            valid_fcbs[offset++] = fs->FCBS[i];
+          }
+        }
+      }
+    }
+    else {
+      for (int i = 0; i < 1024; i++) {
+        if (VALID(fs->SUPERBLOCK[i])) {
+          if (ROOT(fs->SUPERBLOCK[i]))
+            valid_fcbs[offset++] = fs->FCBS[i];
+        }
       }
     }
     sort_by_date(valid_fcbs, offset);
@@ -130,11 +170,26 @@ __device__ void fs_gsys(FileSystem *fs, int op)
   else if (op == LS_S) {
     FCB valid_fcbs[1024];
     int offset = 0;
-    for (int i = 0; i < 1024; i++) {
-      if (VALID(fs->SUPERBLOCK[i])) {
-        valid_fcbs[offset++] = fs->FCBS[i];
+    int WD[2];
+    get_WD(fs, WD);
+    if (WD[0] != - 1) {
+      for (int i = 0; i < 1024; i++) {
+        if (VALID(fs->SUPERBLOCK[i])) {
+          if (PARENT(fs->SUPERBLOCK[i]) == WD[0] && !ROOT(fs->SUPERBLOCK[i])) {
+            valid_fcbs[offset++] = fs->FCBS[i];
+          }
+        }
       }
     }
+    else {
+      for (int i = 0; i < 1024; i++) {
+        if (VALID(fs->SUPERBLOCK[i])) {
+          if (ROOT(fs->SUPERBLOCK[i]))
+            valid_fcbs[offset++] = fs->FCBS[i];
+        }
+      }
+    }
+    
     sort_by_size(valid_fcbs, offset);
     print_array_by_size(fs, valid_fcbs, offset);
   }
@@ -212,13 +267,13 @@ __device__ void fs_gsys(FileSystem *fs, int op, char *s)
 
 
     if (WD[0] != -1) {
-      get_WD(fs, WD);
+      SET_PARENT(fs->SUPERBLOCK[empty_block], WD[0]);
       set_size(&fs->FCBS[WD[0]], get_size(fs->FCBS[WD[0]]) + get_len(s));
+      // printf("size:%d\n", get_size(fs->FCBS[WD[0]]) + get_len(s));
     }
     else {
       SET_ROOT(fs->SUPERBLOCK[empty_block]);
     }
-    get_WD(fs, WD);
   }
   else if (op == CD) {
     int WD[2];  
@@ -245,13 +300,9 @@ __device__ void fs_gsys(FileSystem *fs, int op, char *s)
       }
       else {
         if (WD[0] != -1) {
-          get_WD(fs, WD);
-          printf("%d %d\n", WD[0], WD[1]);
           RESET_WD(fs->SUPERBLOCK[WD[0]]);
-          printf("%d %d\n", WD[0], WD[1]);
         }
         SET_WD(fs->SUPERBLOCK[block]);
-        printf("%d %d\n", WD[0], WD[1]);
       }
     } 
   }
