@@ -1,6 +1,33 @@
 #ifndef UTILS
 #define UTILS
 
+__device__ int get_len(char * s) {
+  for (int i = 0; i < 20; i++) {
+    if (s[i] == '\0') {
+      return i + 1;
+    }
+    return 20;
+  }
+}
+__device__ void get_WD(FileSystem * fs, int *WD) {
+  for (int i =0; i < 1024; i++) {
+    if (VALID(fs->SUPERBLOCK[i])) {
+      if (WD(fs->SUPERBLOCK[i])) {
+        WD[0] = i;
+        if (!ROOT(fs->SUPERBLOCK[i])) {
+          WD[1] = PARENT(fs->SUPERBLOCK[i]);
+        }
+        else {
+          WD[1] = -1;
+        }
+        return ; 
+      }
+    }
+  }
+  WD[0] = -1;
+  WD[1] = -1;
+  return ;
+}
 __device__ void swap(FCB* xp, FCB* yp)
 {
     FCB temp = *xp;
@@ -45,18 +72,29 @@ __device__ void copy_str(char* ori, char* dst) {
   dst[i] = '\0';
 }
 
-__device__ void print_array_by_date(FCB *fcbs, int len) {
+__device__ void print_array_by_date(FileSystem *fs, FCB *fcbs, int len) {
   printf("===sort by modified time===\n");
   for (int i = 0; i < len; i++) {
-    printf("%s  num:%d\n", fcbs[i].name, get_address(fcbs[i]));
+    if (DIR(fs->SUPERBLOCK[i])) {
+      printf("%s d\n", fcbs[i].name);
+    }
+    else {
+      printf("%s\n", fcbs[i].name);
+    } 
   }
 }
 
 
-__device__ void print_array_by_size(FCB *fcbs, int len) {
+__device__ void print_array_by_size(FileSystem *fs, FCB *fcbs, int len) {
   printf("===sort by file size===\n");
   for (int i = 0; i < len; i++) {
-    printf("%s %d\n", fcbs[i].name, get_size(fcbs[i]));
+    if (DIR(fs->SUPERBLOCK[get_address(fcbs[i])])) {
+      printf("address%d\n", get_address(fcbs[i]));
+      printf("%s %d d\n", fcbs[i].name, get_size(fcbs[i]));
+    }
+    else {
+      printf("%s %d\n", fcbs[i].name, get_size(fcbs[i]));
+    }
   }
 }
 
@@ -97,6 +135,26 @@ __device__ void sort_by_size(FCB* fcbs, int n)
         swap(&fcbs[max_idx], &fcbs[i]);
     }
 }
+__device__ void rm_DIR(FileSystem *fs, int block) {
+  for (int i = 0; i < 1024; i++) {
+    if (VALID(fs->SUPERBLOCK[i])) {
+      if (~ROOT(fs->SUPERBLOCK[i])) {
+        if (PARENT(fs->SUPERBLOCK[i]) == block) {
+          if (DIR(fs->SUPERBLOCK[i])) {
+            // rm_DIR(fs, i);
+          }
+          else {
+            for (int j = 0; j < 1024; j++) {
+              fs->FILES[get_address(fs->FCBS[i])][j] = '\0';
+            }
+            RESET_VALID(fs->SUPERBLOCK[i]);
+          }
+        }
+      }
+    }
+  }
+}
+
 
 
 #endif

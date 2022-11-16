@@ -80,6 +80,7 @@ __device__ u32 fs_open(FileSystem *fs, char *s, int op)
       fs->SUPERBLOCK[empty_block] = 1;
       copy_str(s, fs->FCBS[empty_block].name);
       fs->FCBS[empty_block].create_time = gtime++;
+      fs->FCBS[empty_block].modified_time = 0;
       return empty_block;
     }
   }

@@ -8,6 +8,7 @@
 __device__ __managed__ u32 gtime = 0;
 
 
+
 __device__ void fs_init(FileSystem *fs, uchar *volume, int SUPERBLOCK_SIZE,
 							int FCB_SIZE, int FCB_ENTRIES, int VOLUME_SIZE,
 							int STORAGE_BLOCK_SIZE, int MAX_FILENAME_SIZE, 
@@ -31,9 +32,9 @@ __device__ void fs_init(FileSystem *fs, uchar *volume, int SUPERBLOCK_SIZE,
   // init free space management
   // 0-127 bytes
   for (int i = 0; i < 1024; i++) {
-    fs->SUPERBLOCK[i] = 0;
+    RESET(fs->SUPERBLOCK[i]);
   }
-  // printf("%d\n", fs->SUPERBLOCK[0]);
+
   // 128-1151 bytes 
   // modification time sort
   // prev: >>10
@@ -57,7 +58,7 @@ __device__ u32 fs_open(FileSystem *fs, char *s, int op)
 {
   int empty_block = -1;
   for (int i = 0; i < 1024; i++) {
-    if (fs->SUPERBLOCK[i] == 1) {
+    if (VALID(fs->SUPERBLOCK[i])) {
         if (cmp_str(fs->FCBS[i].name, s)) {
           return i;
         }
@@ -77,16 +78,18 @@ __device__ u32 fs_open(FileSystem *fs, char *s, int op)
       return 0;
     }
     else {
-      fs->SUPERBLOCK[empty_block] = 1;
+      RESET(fs->SUPERBLOCK[empty_block]);
+      SET_VALID(fs->SUPERBLOCK[empty_block]);
       copy_str(s, fs->FCBS[empty_block].name);
       fs->FCBS[empty_block].create_time = gtime++;
+      fs->FCBS[empty_block].modified_time = 0;
       return empty_block;
     }
   }
   else {
     printf("Please input correct op!!!\n");
     return 0;
-  }
+  } 
 }
 
 
@@ -115,28 +118,53 @@ __device__ void fs_gsys(FileSystem *fs, int op)
   if (op == LS_D) {
     FCB valid_fcbs[1024];
     int offset = 0;
+
     for (int i = 0; i < 1024; i++) {
-      if (fs->SUPERBLOCK[i] == 1) {
+      if (VALID(fs->SUPERBLOCK[i])) {
         valid_fcbs[offset++] = fs->FCBS[i];
       }
     }
     sort_by_date(valid_fcbs, offset);
-    print_array_by_date(valid_fcbs, offset);
+    print_array_by_date(fs, valid_fcbs, offset);
   }
   else if (op == LS_S) {
     FCB valid_fcbs[1024];
     int offset = 0;
     for (int i = 0; i < 1024; i++) {
-      if (fs->SUPERBLOCK[i] == 1) {
+      if (VALID(fs->SUPERBLOCK[i])) {
         valid_fcbs[offset++] = fs->FCBS[i];
       }
     }
     sort_by_size(valid_fcbs, offset);
-    print_array_by_size(valid_fcbs, offset);
-
-
+    print_array_by_size(fs, valid_fcbs, offset);
   }
-	/* Implement LS_D and LS_S operation here */
+  else if (op == CD_P) {
+    int WD[2];
+    get_WD(fs, WD); 
+    if (WD[0] == -1) {
+      printf("Already in root directory!\n");
+    }
+    else {
+      if (WD[1] != -1){
+        SET_WD(fs->SUPERBLOCK[WD[1]]);
+      }
+      RESET_WD(fs->SUPERBLOCK[WD[0]]);
+    }
+  }
+  else if (op == PWD) {
+    int WD[2];
+    get_WD(fs, WD);
+    printf("/");
+    if (WD[1] != - 1) {
+      printf("%s", fs->FCBS[WD[1]].name);
+      printf("/%s", fs->FCBS[WD[0]].name);
+    }
+    else if (WD[0] != -1) {
+      printf("%s", fs->FCBS[WD[0]].name);
+    }
+    printf("\n");
+  }
+  	
 }
 
 __device__ void fs_gsys(FileSystem *fs, int op, char *s)
@@ -144,7 +172,7 @@ __device__ void fs_gsys(FileSystem *fs, int op, char *s)
 	if (op == RM) {
     int file = -1;
     for (int i = 0; i < 1024; i++) {
-      if (fs->SUPERBLOCK[i] == 1) {
+      if (VALID(fs->SUPERBLOCK[i])) {
         if (cmp_str(fs->FCBS[i].name, s)) {
           file = i;
         }
@@ -152,14 +180,104 @@ __device__ void fs_gsys(FileSystem *fs, int op, char *s)
     }
 
     if (file == - 1) {
-      printf("no such file to delete");
+      printf("no such file to delete\n");
+    }
+    else if (DIR(fs->SUPERBLOCK[file])) {
+      printf("It is a directory!\n");
     }
     else {
       for (int i = 0; i < 1024; i++) {
         fs->FILES[get_address(fs->FCBS[file])][i] = '\0';
       }
-      fs->SUPERBLOCK[file] = 0;
+      RESET_VALID(fs->SUPERBLOCK[file]);
+    }
 
+  }
+  else if (op == MKDIR) {
+    int WD[2];  
+    int empty_block;
+    get_WD(fs, WD);
+    for (int i = 0; i < 1024; i++) {
+      if (!VALID(fs->SUPERBLOCK[i])) {
+        empty_block = i;
+        break;
+      }
+    }
+    RESET(fs->SUPERBLOCK[empty_block]);
+    SET_VALID(fs->SUPERBLOCK[empty_block]);
+    copy_str(s, fs->FCBS[empty_block].name);
+    SET_DIR(fs->SUPERBLOCK[empty_block]);
+    fs->FCBS[empty_block].create_time = gtime++;
+    fs->FCBS[empty_block].modified_time = 0;
+
+
+    if (WD[0] != -1) {
+      get_WD(fs, WD);
+      set_size(&fs->FCBS[WD[0]], get_size(fs->FCBS[WD[0]]) + get_len(s));
+    }
+    else {
+      SET_ROOT(fs->SUPERBLOCK[empty_block]);
+    }
+    get_WD(fs, WD);
+  }
+  else if (op == CD) {
+    int WD[2];  
+    int block = -1;
+    get_WD(fs, WD);
+
+    for (int i = 0; i < 1024; i++) {
+      if (VALID(fs->SUPERBLOCK[i])) {
+        if (cmp_str(fs->FCBS[i].name, s)) {
+          block = i;
+          break;
+        }
+      }
+    }
+    if (block == -1) {
+      printf("No such directory!\n");
+    }
+    else {
+      if (!DIR(fs->SUPERBLOCK[block])) {
+        printf("Not a directory!\n");
+      }
+      else if (WD[0] != -1 && WD[0] != PARENT(fs->SUPERBLOCK[block])) {
+        printf("No such directory in current directory!\n");
+      }
+      else {
+        if (WD[0] != -1) {
+          get_WD(fs, WD);
+          printf("%d %d\n", WD[0], WD[1]);
+          RESET_WD(fs->SUPERBLOCK[WD[0]]);
+          printf("%d %d\n", WD[0], WD[1]);
+        }
+        SET_WD(fs->SUPERBLOCK[block]);
+        printf("%d %d\n", WD[0], WD[1]);
+      }
+    } 
+  }
+  else if (op == RM_RF) {
+    int WD[2];
+    get_WD(fs, WD);
+    int file = -1;
+    for (int i = 0; i < 1024; i++) {
+      if (VALID(fs->SUPERBLOCK[i])) {
+        if (cmp_str(fs->FCBS[i].name, s)) {
+          file = i;
+        }
+      }
+    }
+
+    if (file == - 1) {
+      printf("no such directory to delete");
+    }
+    else if (DIR(fs->SUPERBLOCK[file])) {
+      rm_DIR(fs, file);
+    }
+    else {
+      for (int i = 0; i < 1024; i++) {
+        fs->FILES[get_address(fs->FCBS[file])][i] = '\0';
+      }
+      RESET_VALID(fs->SUPERBLOCK[file]);
     }
 
   }
