@@ -310,14 +310,27 @@ __device__ void fs_gsys(FileSystem *fs, int op, char *s)
     int WD[2];
     get_WD(fs, WD);
     int file = -1;
+  if (WD[0] == -1) {
     for (int i = 0; i < 1024; i++) {
       if (VALID(fs->SUPERBLOCK[i])) {
-        if (cmp_str(fs->FCBS[i].name, s)) {
+        if (ROOT(fs->SUPERBLOCK[i])) {
+          if (cmp_str(fs->FCBS[i].name, s)) 
           file = i;
         }
       }
     }
-
+  }
+  else {
+    for (int i = 0; i < 1024; i++) {
+      if (VALID(fs->SUPERBLOCK[i])) {
+        if (!ROOT(fs->SUPERBLOCK[i]) && PARENT(fs->SUPERBLOCK[i]) == WD[0]) {
+          if (cmp_str(fs->FCBS[i].name, s)) 
+            file = i;
+        }
+      }
+    }
+  }
+ 
     if (file == - 1) {
       printf("no such directory to delete");
     }

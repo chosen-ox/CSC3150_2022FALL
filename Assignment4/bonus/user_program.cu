@@ -45,7 +45,7 @@ __device__ void user_program(FileSystem *fs, uchar *input, uchar *output) {
 	fs_gsys(fs, CD_P);
 	fs_gsys(fs, LS_S);
 	fs_gsys(fs, CD, "app\0");
-	// fs_gsys(fs, RM_RF, "soft\0");
+	fs_gsys(fs, RM_RF, "soft\0");
 	fs_gsys(fs, LS_S);
 	fs_gsys(fs, CD_P);
 	fs_gsys(fs, LS_S);		

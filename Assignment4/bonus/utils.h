@@ -135,22 +135,38 @@ __device__ void sort_by_size(FCB* fcbs, int n)
     }
 }
 __device__ void rm_DIR(FileSystem *fs, int block) {
+  int queue[1024];
   for (int i = 0; i < 1024; i++) {
-    if (VALID(fs->SUPERBLOCK[i])) {
-      if (~ROOT(fs->SUPERBLOCK[i])) {
-        if (PARENT(fs->SUPERBLOCK[i]) == block) {
-          if (DIR(fs->SUPERBLOCK[i])) {
-            // rm_DIR(fs, i);
-          }
-          else {
-            for (int j = 0; j < 1024; j++) {
-              fs->FILES[get_address(fs->FCBS[i])][j] = '\0';
+    queue[i] = -1;
+  }
+  int ptr = 0;
+  int cur_ptr = 0;
+  int cur_idx = -1;
+  queue[ptr++] = block; 
+  while (queue[cur_ptr] != -1) {
+    cur_idx = queue[cur_ptr++];
+    for (int i = 0; i < 1024; i++) {
+      if (VALID(fs->SUPERBLOCK[i])) {
+        if (~ROOT(fs->SUPERBLOCK[i])) {
+          if (PARENT(fs->SUPERBLOCK[i]) == cur_idx) {
+            if (DIR(fs->SUPERBLOCK[i])) {
+              queue[ptr++] = i;
             }
-            RESET_VALID(fs->SUPERBLOCK[i]);
+            else {
+              for (int j = 0; j < 1024; j++) {
+                fs->FILES[get_address(fs->FCBS[i])][j] = '\0';
+              }
+              RESET_VALID(fs->SUPERBLOCK[i]);
+            }
           }
         }
       }
     }
+    for (int j = 0; j < 1024; j++) {
+      fs->FILES[get_address(fs->FCBS[cur_idx])][j] = '\0';
+    }
+    RESET_VALID(fs->SUPERBLOCK[cur_idx]);
+
   }
 }
 
