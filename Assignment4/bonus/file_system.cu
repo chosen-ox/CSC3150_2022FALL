@@ -130,8 +130,14 @@ __device__ void fs_read(FileSystem *fs, uchar *output, u32 size, u32 fp)
 __device__ u32 fs_write(FileSystem *fs, uchar* input, u32 size, u32 fp)
 {
 
+  int WD[2];
+  get_WD(fs, WD);
+  fs->FCBS[fp].modified_time = gtime;
+  if (WD[0] != -1)
+  fs->FCBS[WD[0]].modified_time = gtime;
+  if (WD[1] != -1)
+  fs->FCBS[WD[1]].modified_time = gtime++;
 
-  fs->FCBS[fp].modified_time = gtime++;
   set_size(&fs->FCBS[fp], size);
   for (int i =0; i < 1024; i++) {
     fs->FILES[get_address(fs->FCBS[fp])][i] = '\0';
@@ -259,6 +265,12 @@ __device__ void fs_gsys(FileSystem *fs, int op, char *s)
       printf("It is a directory!\n");
     }
     else {
+      
+      if (WD[0] != -1)
+      fs->FCBS[WD[0]].modified_time = gtime;
+      if (WD[1] != -1)
+      fs->FCBS[WD[1]].modified_time = gtime++;
+
       for (int i = 0; i < 1024; i++) {
         fs->FILES[get_address(fs->FCBS[file])][i] = '\0';
       }
@@ -284,7 +296,11 @@ __device__ void fs_gsys(FileSystem *fs, int op, char *s)
     copy_str(s, fs->FCBS[empty_block].name);
     SET_DIR(fs->SUPERBLOCK[empty_block]);
     fs->FCBS[empty_block].create_time = gtime++;
-    fs->FCBS[empty_block].modified_time = gtime++;
+    fs->FCBS[empty_block].modified_time = gtime;
+    if (WD[0] != -1)
+    fs->FCBS[WD[0]].modified_time = gtime;
+    if (WD[1] != -1)
+    fs->FCBS[WD[1]].modified_time = gtime++;
 
 
     if (WD[0] != -1) {
@@ -356,6 +372,12 @@ __device__ void fs_gsys(FileSystem *fs, int op, char *s)
       printf("no such directory to delete");
     }
     else if (DIR(fs->SUPERBLOCK[file])) {
+      
+      if (WD[0] != -1)
+      fs->FCBS[WD[0]].modified_time = gtime;
+      if (WD[1] != -1)
+      fs->FCBS[WD[1]].modified_time = gtime++;
+
       rm_DIR(fs, file);
     }
     else {
