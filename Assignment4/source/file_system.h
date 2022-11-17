@@ -16,9 +16,9 @@ typedef uint32_t u32;
 
 typedef struct FCB {
 	char name[20];
-	int address_size;//0-15 size, 16-31 addr
-	int create_time;
-	int modified_time;	
+	int size;
+	int create_modified;//0-15 modified time, 16-31 create time
+	int address;	
 } FCB;
 
 struct FileSystem {

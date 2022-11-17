@@ -79,8 +79,10 @@ __device__ u32 fs_open(FileSystem *fs, char *s, int op)
     else {
       fs->SUPERBLOCK[empty_block] = 1;
       copy_str(s, fs->FCBS[empty_block].name);
-      fs->FCBS[empty_block].create_time = gtime++;
-      fs->FCBS[empty_block].modified_time = 0;
+      // fs->FCBS[empty_block].create_time = gtime++;
+      // fs->FCBS[empty_block].modified_time = 0;
+      set_create_time(&fs->FCBS[empty_block], gtime++);
+      set_modified_time(&fs->FCBS[empty_block], 0);
       return empty_block;
     }
   }
@@ -102,8 +104,10 @@ __device__ u32 fs_write(FileSystem *fs, uchar* input, u32 size, u32 fp)
 {
 
 
-  fs->FCBS[fp].modified_time = gtime++;
-  set_size(&fs->FCBS[fp], size);
+  set_modified_time(&fs->FCBS[fp], gtime++);
+  // printf("name%s time: %d\n", fs->FCBS[fp].name, gtime - 1);
+
+  fs->FCBS[fp].size = size;
   for (int i =0; i < 1024; i++) {
     fs->FILES[get_address(fs->FCBS[fp])][i] = '\0';
   }
