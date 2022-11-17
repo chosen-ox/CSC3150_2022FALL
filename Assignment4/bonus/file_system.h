@@ -21,21 +21,21 @@ typedef uint32_t u32;
 
 #define RESET(x) ((x) = (0))
 
-#define VALID(x) (x & 0b1)
-#define SET_VALID(x) ((x) |= (0b1))
-#define RESET_VALID(x) ((x) &= (0xfffffffe))
+#define VALID(x) (x & 0x10000)
+#define SET_VALID(x) ((x) |= (0x10000))
+#define RESET_VALID(x) ((x) &= (0xfffeffff))
 
-#define DIR(x) ((x & 0b10))
-#define SET_DIR(x) ((x) |= (0b10))
-#define RESET_DIR(x) ((x) &= (0xfffffffd))
+#define DIR(x) ((x & 0x20000))
+#define SET_DIR(x) ((x) |= (0x20000))
+#define RESET_DIR(x) ((x) &= (0xfffdffff))
 
-#define	WD(x) (x & 0b100) 
-#define SET_WD(x) ((x) |= (0b100))
-#define RESET_WD(x) ((x) &= (0xfffffffb))
+#define	WD(x) (x & 0x40000) 
+#define SET_WD(x) ((x) |= (0x40000))
+#define RESET_WD(x) ((x) &= (0xfffbffff))
 
-#define ROOT(x) (x & 0b1000)
-#define SET_ROOT(x) ((x) |= (0b1000))
-#define RESET_ROOT(x) ((x) &= (0xfffffff7))
+#define ROOT(x) (x & 0x80000)
+#define SET_ROOT(x) ((x) |= (0x80000))
+#define RESET_ROOT(x) ((x) &= (0xfff7ffff))
 
 #define PARENT(x) (x >>22)
 #define SET_PARENT(x, p) {\

@@ -14,6 +14,13 @@ typedef uint32_t u32;
 #define LS_S 1
 #define RM 2
 
+
+#define RESET(x) ((x) = (0))
+
+#define VALID(x) (x & 0x10000)
+#define SET_VALID(x) ((x) |= (0x10000))
+#define RESET_VALID(x) ((x) &= (0xfffeffff))
+
 typedef struct FCB {
 	char name[20];
 	int size;

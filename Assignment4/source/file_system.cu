@@ -57,7 +57,7 @@ __device__ u32 fs_open(FileSystem *fs, char *s, int op)
 {
   int empty_block = -1;
   for (int i = 0; i < 1024; i++) {
-    if (fs->SUPERBLOCK[i] == 1) {
+    if (VALID(fs->FCBS[i].address)) {
         if (cmp_str(fs->FCBS[i].name, s)) {
           return i;
         }
@@ -77,12 +77,24 @@ __device__ u32 fs_open(FileSystem *fs, char *s, int op)
       return 0;
     }
     else {
-      fs->SUPERBLOCK[empty_block] = 1;
+      // fs->SUPERBLOCK[empty_block] = 1;
+      SET_VALID(fs->FCBS[empty_block].address);
       copy_str(s, fs->FCBS[empty_block].name);
       // fs->FCBS[empty_block].create_time = gtime++;
       // fs->FCBS[empty_block].modified_time = 0;
-      set_create_time(&fs->FCBS[empty_block], gtime++);
-      set_modified_time(&fs->FCBS[empty_block], 0);
+      set_create_time(&fs->FCBS[empty_block], gtime);
+      set_modified_time(&fs->FCBS[empty_block], gtime++);
+      if (gtime == 1024) {
+        gtime = 0;
+        FCB valid_fcbs[1024];
+        int offset = 0;
+        for (int i = 0; i < 1024; i++) {
+          if (VALID(fs->FCBS[i].address)) {
+            valid_fcbs[offset++] = fs->FCBS[i];
+          }
+        }
+        sort_by_time(valid_fcbs, offset);
+      }
       return empty_block;
     }
   }
@@ -122,7 +134,7 @@ __device__ void fs_gsys(FileSystem *fs, int op)
     FCB valid_fcbs[1024];
     int offset = 0;
     for (int i = 0; i < 1024; i++) {
-      if (fs->SUPERBLOCK[i] == 1) {
+      if (VALID(fs->FCBS[i].address)) {
         valid_fcbs[offset++] = fs->FCBS[i];
       }
     }
@@ -133,7 +145,7 @@ __device__ void fs_gsys(FileSystem *fs, int op)
     FCB valid_fcbs[1024];
     int offset = 0;
     for (int i = 0; i < 1024; i++) {
-      if (fs->SUPERBLOCK[i] == 1) {
+      if (VALID(fs->FCBS[i].address)) {
         valid_fcbs[offset++] = fs->FCBS[i];
       }
     }
@@ -150,7 +162,7 @@ __device__ void fs_gsys(FileSystem *fs, int op, char *s)
 	if (op == RM) {
     int file = -1;
     for (int i = 0; i < 1024; i++) {
-      if (fs->SUPERBLOCK[i] == 1) {
+      if (VALID(fs->FCBS[i].address)) {
         if (cmp_str(fs->FCBS[i].name, s)) {
           file = i;
         }
@@ -164,7 +176,7 @@ __device__ void fs_gsys(FileSystem *fs, int op, char *s)
       for (int i = 0; i < 1024; i++) {
         fs->FILES[get_address(fs->FCBS[file])][i] = '\0';
       }
-      fs->SUPERBLOCK[file] = 0;
+      RESET_VALID(fs->FCBS[file].address);
 
     }
 

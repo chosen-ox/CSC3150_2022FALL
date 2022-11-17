@@ -72,6 +72,26 @@ __device__ void copy_str(char* ori, char* dst) {
   dst[i] = '\0';
 }
 
+__device__ void sort_by_time(FCB *fcbs, int n) {
+  int i, j, max_idx;
+ 
+    // One by one move boundary of unsorted subarray
+    for (i = 0; i < n - 1; i++) {
+ 
+        // Find the minimum element in unsorted array
+        max_idx = i;
+        for (j = i + 1; j < n; j++)
+            if (get_modified_time(fcbs[j]) > get_modified_time(fcbs[max_idx]))
+                max_idx = j;
+ 
+        // Swap the found minimum element
+        // with the first element
+        swap(&fcbs[max_idx], &fcbs[i]);
+    }
+
+}
+
+
 __device__ void print_array_by_date(FCB *fcbs, int len) {
   printf("===sort by modified time===\n");
   for (int i = 0; i < len; i++) {
