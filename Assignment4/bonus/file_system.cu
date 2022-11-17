@@ -139,6 +139,7 @@ __device__ u32 fs_write(FileSystem *fs, uchar* input, u32 size, u32 fp)
   for (int i = 0; i < size; i++) {
     fs->FILES[get_address(fs->FCBS[fp])][i] = input[i];
   }
+  return 0;
 }
 __device__ void fs_gsys(FileSystem *fs, int op)
 {
@@ -224,15 +225,32 @@ __device__ void fs_gsys(FileSystem *fs, int op)
 
 __device__ void fs_gsys(FileSystem *fs, int op, char *s)
 {
+  
 	if (op == RM) {
+    int WD[2];
+    get_WD(fs, WD);
     int file = -1;
+    if (WD[0] == -1) {
     for (int i = 0; i < 1024; i++) {
       if (VALID(fs->SUPERBLOCK[i])) {
-        if (cmp_str(fs->FCBS[i].name, s)) {
-          file = i;
+        if (ROOT(fs->SUPERBLOCK[i])) {
+          if (cmp_str(fs->FCBS[i].name, s)) 
+          file =i;
         }
       }
     }
+  }
+  else {
+    for (int i = 0; i < 1024; i++) {
+      if (VALID(fs->SUPERBLOCK[i])) {
+        if (!ROOT(fs->SUPERBLOCK[i]) && PARENT(fs->SUPERBLOCK[i]) == WD[0]) {
+          if (cmp_str(fs->FCBS[i].name, s)) 
+            file = i;
+        }
+      }
+    }
+  }
+    
 
     if (file == - 1) {
       printf("no such file to delete\n");
@@ -244,6 +262,9 @@ __device__ void fs_gsys(FileSystem *fs, int op, char *s)
       for (int i = 0; i < 1024; i++) {
         fs->FILES[get_address(fs->FCBS[file])][i] = '\0';
       }
+
+      if (!ROOT(fs->SUPERBLOCK[file])) 
+      set_size(&fs->FCBS[WD[0]], get_size(fs->FCBS[WD[0]]) - get_len(s));
       RESET_VALID(fs->SUPERBLOCK[file]);
     }
 
@@ -263,7 +284,7 @@ __device__ void fs_gsys(FileSystem *fs, int op, char *s)
     copy_str(s, fs->FCBS[empty_block].name);
     SET_DIR(fs->SUPERBLOCK[empty_block]);
     fs->FCBS[empty_block].create_time = gtime++;
-    fs->FCBS[empty_block].modified_time = 0;
+    fs->FCBS[empty_block].modified_time = gtime++;
 
 
     if (WD[0] != -1) {
@@ -338,10 +359,7 @@ __device__ void fs_gsys(FileSystem *fs, int op, char *s)
       rm_DIR(fs, file);
     }
     else {
-      for (int i = 0; i < 1024; i++) {
-        fs->FILES[get_address(fs->FCBS[file])][i] = '\0';
-      }
-      RESET_VALID(fs->SUPERBLOCK[file]);
+      fs_gsys(fs, RM, s);
     }
 
   }

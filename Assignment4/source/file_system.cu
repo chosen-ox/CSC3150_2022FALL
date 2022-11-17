@@ -110,6 +110,7 @@ __device__ u32 fs_write(FileSystem *fs, uchar* input, u32 size, u32 fp)
   for (int i = 0; i < size; i++) {
     fs->FILES[get_address(fs->FCBS[fp])][i] = input[i];
   }
+  return 0;
 }
 __device__ void fs_gsys(FileSystem *fs, int op)
 {

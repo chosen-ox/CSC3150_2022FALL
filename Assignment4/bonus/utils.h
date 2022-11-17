@@ -136,6 +136,10 @@ __device__ void sort_by_size(FCB* fcbs, int n)
 }
 __device__ void rm_DIR(FileSystem *fs, int block) {
   int queue[1024];
+  if (!ROOT(fs->SUPERBLOCK[block])) 
+  set_size(&fs->FCBS[PARENT(fs->SUPERBLOCK[block])], get_size(fs->FCBS[PARENT(fs->SUPERBLOCK[block])]) - get_len(fs->FCBS[block].name));
+  RESET_VALID(fs->SUPERBLOCK[block]);
+
   for (int i = 0; i < 1024; i++) {
     queue[i] = -1;
   }
@@ -165,10 +169,6 @@ __device__ void rm_DIR(FileSystem *fs, int block) {
     for (int j = 0; j < 1024; j++) {
       fs->FILES[get_address(fs->FCBS[cur_idx])][j] = '\0';
     }
-    RESET_VALID(fs->SUPERBLOCK[cur_idx]);
-    if (!ROOT(fs->SUPERBLOCK[cur_idx])) 
-    set_size(&fs->FCBS[PARENT(fs->SUPERBLOCK[cur_idx])], get_size(fs->FCBS[PARENT(fs->SUPERBLOCK[cur_idx])]) - get_len(fs->FCBS[cur_idx].name));
-
   }
 }
 
