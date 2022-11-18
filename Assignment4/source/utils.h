@@ -37,18 +37,11 @@ __device__ int set_address(FCB *fcb, int address) {
 }
 
 __device__ void set_create_time(FCB *fcb, int create_time) { 
-  if (create_time >= 1024) {
-    printf("overflow!");
-  }
   fcb->create_modified &= 0x0000ffff; 
   fcb->create_modified |= (create_time << 16);
 }
 
 __device__ void set_modified_time(FCB *fcb, int modified_time) {
-
-  if (modified_time >= 1024) {
-    printf("overflow!!!");
-  }
   fcb->create_modified &= 0xffff0000;
   fcb->create_modified |= modified_time;
 }
@@ -72,23 +65,60 @@ __device__ void copy_str(char* ori, char* dst) {
   dst[i] = '\0';
 }
 
-__device__ void sort_by_time(FCB *fcbs, int n) {
-  int i, j, max_idx;
- 
+
+__device__ int sort_by_time(FCB *fcbs) {
+  int i, j, min_idx;
+  FCB valid_fcbs[1024];
+  int n = 0;
+  for (i = 0; i < 1024; i++) {
+    if (VALID(fcbs[i].address)) {
+      valid_fcbs[n++] = fcbs[i];
+    }
+  }
     // One by one move boundary of unsorted subarray
     for (i = 0; i < n - 1; i++) {
  
         // Find the minimum element in unsorted array
-        max_idx = i;
+        min_idx = i;
         for (j = i + 1; j < n; j++)
-            if (get_modified_time(fcbs[j]) > get_modified_time(fcbs[max_idx]))
-                max_idx = j;
+            if (get_modified_time(valid_fcbs[j]) < get_modified_time(valid_fcbs[min_idx]))
+                min_idx = j;
  
         // Swap the found minimum element
         // with the first element
-        swap(&fcbs[max_idx], &fcbs[i]);
+        swap(&valid_fcbs[min_idx], &valid_fcbs[i]);
     }
 
+    for (i = 0; i < n; i++) {
+      for (j = 0; j < 1024; j++) {
+        if (VALID(fcbs[i].address) && cmp_str(valid_fcbs[i].name, fcbs[j].name)) {
+          set_modified_time(&fcbs[j], i);
+        }
+      }
+    }
+
+    for (i = 0; i < n - 1; i++) {
+ 
+        // Find the minimum element in unsorted array
+        min_idx = i;
+        for (j = i + 1; j < n; j++)
+            if (get_create_time(valid_fcbs[j]) < get_create_time(valid_fcbs[min_idx]))
+                min_idx = j;
+ 
+        // Swap the found minimum element
+        // with the first element
+        swap(&valid_fcbs[min_idx], &valid_fcbs[i]);
+    }
+
+    for (i = 0; i < n; i++) {
+      for (j = 0; j < 1024; j++) {
+        if (VALID(fcbs[i].address) && cmp_str(valid_fcbs[i].name, fcbs[j].name)) {
+          set_create_time(&fcbs[i], i);
+        }
+      }
+    }
+
+    return n;
 }
 
 
