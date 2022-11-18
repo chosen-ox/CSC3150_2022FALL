@@ -59,6 +59,12 @@ __device__ u32 fs_open(FileSystem *fs, char *s, int op)
   for (int i = 0; i < 1024; i++) {
     if (VALID(fs->FCBS[i].address)) {
         if (cmp_str(fs->FCBS[i].name, s)) {
+          if (op == G_READ) {
+            SET_READ(i);
+          }
+          else {
+            SET_WRITE(i);
+          }
           return i;
         }
     }
@@ -88,6 +94,8 @@ __device__ u32 fs_open(FileSystem *fs, char *s, int op)
       copy_str(s, fs->FCBS[empty_block].name);
       set_create_time(&fs->FCBS[empty_block], gtime);
       set_modified_time(&fs->FCBS[empty_block], gtime++);
+      fs->FCBS[empty_block].size = 0;
+      SET_WRITE(empty_block);
       return empty_block;
     }
   }
@@ -100,6 +108,15 @@ __device__ u32 fs_open(FileSystem *fs, char *s, int op)
 
 __device__ void fs_read(FileSystem *fs, uchar *output, u32 size, u32 fp)
 {
+  if (!READ(fp)) {
+    printf("No read permission!\n");
+    return ; 
+  }
+  fp = fp & 0x0000ffff;
+  if (fs->FCBS[fp].size < size) {
+    printf("access size larger than the actul size of the file!!!\n");
+    return ;
+  }
 	for (int i = 0; i < size; i++) {
     output[i] = fs->FILES[get_address(fs->FCBS[fp])][i];
   }
@@ -108,6 +125,12 @@ __device__ void fs_read(FileSystem *fs, uchar *output, u32 size, u32 fp)
 __device__ u32 fs_write(FileSystem *fs, uchar* input, u32 size, u32 fp)
 {
 
+
+  if (!WRITE(fp)) {
+    printf("No write permission!\n");
+    return ; 
+  }
+  fp = fp & 0x0000ffff;
 
   if (gtime == 65535) {
     gtime = sort_by_time(fs->FCBS);

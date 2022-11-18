@@ -21,6 +21,18 @@ typedef uint32_t u32;
 #define SET_VALID(x) ((x) |= (0x10000))
 #define RESET_VALID(x) ((x) &= (0xfffeffff))
 
+#define WRITE(x) ((x) & (0x10000000))
+#define SET_WRITE(x) ((x) |= (0x10000000))
+#define RESET_WRITE(x) ((x) &= (0xefffffff))
+
+#define READ(x) ((x) & (0x20000000))
+#define SET_READ(x) ((x) |= (0x20000000))
+#define RESET_READ(x) ((x) &= (0xdfffffff))
+
+// #define EMPTY((x) & (0x40000000))
+// #define SET_EMPTY(x) ((x) |= (0x40000000))
+// #define RESET_EMPTY(x) ((x) &= (0xbfffffff))
+
 typedef struct FCB {
 	char name[20];
 	int size;
