@@ -46,7 +46,8 @@ typedef struct FCB {
 struct FileSystem {
 	int SUPERBLOCK[1024];
 	FCB FCBS[1024];
-	uchar FILES[1024][1024];
+	// uchar FILES[1024][1024];
+	uchar BLOCKS[32768][32];
 
 	int SUPERBLOCK_SIZE;
 	int FCB_SIZE;

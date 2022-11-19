@@ -46,7 +46,7 @@ __device__ void fs_init(FileSystem *fs, uchar *volume, int SUPERBLOCK_SIZE,
   // FCB *ptr = (FCB *) &fs->volume[fcb_base];
 
   for (int i = 0; i < 1024; i++) {
-    set_address(&fs->FCBS[i], i);  
+    set_address(&fs->FCBS[i], 0);  
   }
 
 }
@@ -117,9 +117,7 @@ __device__ void fs_read(FileSystem *fs, uchar *output, u32 size, u32 fp)
     printf("access size larger than the actul size of the file!!!\n");
     return ;
   }
-	for (int i = 0; i < size; i++) {
-    output[i] = fs->FILES[get_address(fs->FCBS[fp])][i];
-  }
+  read_blocks(fs, get_address(fs->FCBS[fp]), size, output);
 }
 
 __device__ u32 fs_write(FileSystem *fs, uchar* input, u32 size, u32 fp)
@@ -132,21 +130,50 @@ __device__ u32 fs_write(FileSystem *fs, uchar* input, u32 size, u32 fp)
   }
   fp = fp & 0x0000ffff;
 
+  // printf("name%s time: %d\n", fs->FCBS[fp].name, gtime - 1);
+  
+  int block_need = ceil(size, 32);
+  int block_need_old = ceil(fs->FCBS[fp].size, 32);
+  if (block_need <= block_need_old) {
+    refill_blocks(fs, get_address(fs->FCBS[fp]), fs->FCBS[fp].size, size, input); 
+    fs->FCBS[fp].size = size;
+  }
+  else {
+    int address = find_hole(fs->SUPERBLOCK, size);
+    if (address != -1) {
+      flush_blocks(fs, get_address(fs->FCBS[fp]), block_need_old);
+      fill_blocks(fs, address, size, input);
+      set_address(&fs->FCBS[fp], address);
+      fs->FCBS[fp].size = size;
+    }
+    else {
+
+      for (int i = 0; i < 1024; i++) {
+        fs->SUPERBLOCK[i] = 0;
+      }
+      RESET_VALID(fs->FCBS[fp].address);
+      compact_blocks(fs);
+      SET_VALID(fs->FCBS[fp].address);
+      int address = find_hole(fs->SUPERBLOCK, size);
+      if (address != -1) {
+        flush_blocks(fs, get_address(fs->FCBS[fp]), block_need_old);
+        fill_blocks(fs, address, size, input);
+        set_address(&fs->FCBS[fp], address);
+        fs->FCBS[fp].size = size;
+      }
+      else {
+        printf("no big enough continous space!!!\n");
+      }
+      return 0;
+    }
+  }
+
   if (gtime == 65535) {
     gtime = sort_by_time(fs->FCBS);
     printf("gtime:%d\n", gtime);
   }
 
   set_modified_time(&fs->FCBS[fp], gtime++);
-  // printf("name%s time: %d\n", fs->FCBS[fp].name, gtime - 1);
-
-  fs->FCBS[fp].size = size;
-  for (int i =0; i < 1024; i++) {
-    fs->FILES[get_address(fs->FCBS[fp])][i] = '\0';
-  }
-  for (int i = 0; i < size; i++) {
-    fs->FILES[get_address(fs->FCBS[fp])][i] = input[i];
-  }
   return 0;
 }
 __device__ void fs_gsys(FileSystem *fs, int op)
@@ -194,11 +221,7 @@ __device__ void fs_gsys(FileSystem *fs, int op, char *s)
       printf("no such file to delete");
     }
     else {
-      for (int i = 0; i < 1024; i++) {
-        fs->FILES[get_address(fs->FCBS[file])][i] = '\0';
-      }
       RESET_VALID(fs->FCBS[file].address);
-
     }
 
   }

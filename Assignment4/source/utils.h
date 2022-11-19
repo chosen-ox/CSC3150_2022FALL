@@ -1,9 +1,22 @@
 #ifndef UTILS
 #define UTILS
-__device__ int is_filled(int * superblock, int size) {
-  int x = size / 32;
-  int y = size % 32;
+__device__ int is_filled(int *superblock, int idx) {
+  int x = idx / 32;
+  int y = idx % 32;
   return superblock[x] & (1<<y); 
+}
+
+__device__ void flush_block(int *superblock, int idx) {
+  int x = idx / 32;
+  int y = idx % 32;
+  superblock[x] &= ~(1<<y); 
+}
+
+
+__device__ void set_block(int *superblock, int idx) {
+  int x = idx / 32;
+  int y = idx % 32;
+  superblock[x] |= (1<<y); 
 }
 
 __device__ int ceil(int x, int y) {
@@ -72,26 +85,136 @@ __device__ void copy_str(char* ori, char* dst) {
 
 __device__ int find_hole(int *superblock, int size) {
   int block_num = ceil(size, 32);
-  int j;
-  for (int i = 0; i < 32768; i++) {
+  int i, j;
+  for (i = 0; i < 32768; i++) {
     if (!is_filled(superblock, i)) {
-      if (32768 - i < size) {
+      if (32768 - i < block_num) {
         break;
       }
-      for (j = 0; j < size; j++) {
-        if (is_filled(superblock ,j)) {
+      for (j = 0; j < block_num; j++) {
+        if (is_filled(superblock , i + j)) {
           break;
         }
       }
-      if (j == size) {
+      if (j == block_num) {
         return i;
       }
       else {
-        i = MIN(32767 ,j + 1);
+        i = MIN(32767 , i + j + 1);
       }
     }
   }
+  return -1;
 } 
+
+
+__device__ void read_blocks(FileSystem *fs, int address, int size, uchar *output) {
+
+  int i, j, k;
+  int block_num = ceil(size, 32);
+  k = 0;
+  for (i = 0; i < block_num; i++) {
+    for (j = 0; j < 32; j++) {
+      if (k < size) {
+        output[k++] = fs->BLOCKS[address + i][j];
+      }
+    }
+  }
+
+}
+
+__device__ void flush_blocks(FileSystem *fs, int address, int block_num) {
+  for (int i = 0; i < block_num; i++) {
+    flush_block(fs->SUPERBLOCK, address + i);
+  }
+}
+
+__device__ void fill_blocks(FileSystem *fs, int address, int size, uchar *input) {
+
+  int i, j, k;
+  int block_num = ceil(size, 32);
+  k = 0;
+  for (i = 0; i < block_num; i++) {
+    set_block(fs->SUPERBLOCK, address + i);
+    for (j = 0; j < 32; j++) {
+      fs->BLOCKS[address + i][j] = 0;
+      if (k < size) {
+        fs->BLOCKS[address + i][j] = input[k++];
+      }
+    }
+  }
+}
+
+__device__ void refill_blocks(FileSystem *fs, int address, int old_size, int new_size, uchar * input){
+
+  int i, j, k;
+  k = 0;
+  int block_need_old = ceil(old_size ,32); 
+  int block_need = ceil(new_size, 32);
+  for (i = 0; i < block_need_old; i++) {
+    for (j = 0; j < 32; j++) {
+      fs->BLOCKS[address + i][j] = 0;
+    }
+    if (block_need-- > 0) {
+      for (j = 0; j < 32; j++) {
+        if (k < new_size) {
+          fs->BLOCKS[address + i][j] = input[k++]; 
+        }
+      }
+    }
+    else {
+      flush_block(fs->SUPERBLOCK, address + i);
+    }
+  }
+}
+
+__device__ void move_blocks(FileSystem *fs, int old_address, int new_address, int block_num) {
+  // uchar tmp[block_num * 32];
+  uchar *tmp = (uchar *) malloc(sizeof(uchar) * block_num * 32);
+  read_blocks(fs, old_address, block_num * 32, tmp);
+  flush_blocks(fs, old_address, block_num);
+  fill_blocks(fs, new_address, block_num * 32, tmp);
+
+  free(tmp);
+}
+
+__device__ void compact_blocks(FileSystem * fs) {
+
+  int i, j, min_idx;
+  FCB valid_fcbs[1024];
+  int n = 0;
+  for (i = 0; i < 1024; i++) {
+    if (VALID(fs->FCBS[i].address)) {
+      valid_fcbs[n++] = fs->FCBS[i];
+    }
+  }
+    // One by one move boundary of unsorted subarray
+    for (i = 0; i < n - 1; i++) {
+ 
+        // Find the minimum element in unsorted array
+        min_idx = i;
+        for (j = i + 1; j < n; j++)
+            if (get_address(valid_fcbs[j]) < get_address(valid_fcbs[min_idx]))
+                min_idx = j;
+ 
+        // Swap the found minimum element
+        // with the first element
+        swap(&valid_fcbs[min_idx], &valid_fcbs[i]);
+    }
+    int block_idx = 0;
+    for (int i = 0; i < n; i++) {
+      int block_num = ceil(valid_fcbs[i].size, 32);
+      if (get_address(valid_fcbs[i]) != block_idx) {
+        move_blocks(fs, get_address(valid_fcbs[i]), block_idx, block_num);
+        for (j = 0; j < 1024; j++) {
+            if (VALID(fs->FCBS[j].address) && cmp_str(fs->FCBS[j].name, valid_fcbs[i].name)) {
+              set_address(&fs->FCBS[j], block_idx);
+            }
+        }
+      }
+      block_idx += block_num;
+    }
+}
 
 __device__ int sort_by_time(FCB *fcbs) {
   int i, j, min_idx;

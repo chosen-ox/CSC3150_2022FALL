@@ -143,8 +143,11 @@ __device__ void user_program(FileSystem *fs, uchar *input, uchar *output) {
 	// fs_gsys(fs, LS_S);
 
 	/////////////// Test Case 4  ///////////////
+	// printf("1\n");
     u32 fp = fs_open(fs, "32-block-0", G_WRITE);
+	// printf("2\n");
     fs_write(fs, input, 32, fp);
+	// printf("3\n");
     for (int j = 0; j < 1023; ++j) {
         char tag[] = "1024-block-????";
         int i = j;
@@ -155,10 +158,15 @@ __device__ void user_program(FileSystem *fs, uchar *input, uchar *output) {
         tag[13] = static_cast<char>(i / 10 + '0');
         i = i % 10;
         tag[14] = static_cast<char>(i + '0');
+		// printf("4\n");
         fp = fs_open(fs, tag, G_WRITE);
+		// printf("5\n");
         fs_write(fs, input + j * 1024, 1024, fp);
+		// printf("6\n");
     }
+	// printf("4\n");
     fs_gsys(fs, RM, "32-block-0");
+	// printf("5\n");
     // now it has one 32byte at first, 1023 * 1024 file in the middle
 
     fp = fs_open(fs, "1024-block-1023", G_WRITE);
