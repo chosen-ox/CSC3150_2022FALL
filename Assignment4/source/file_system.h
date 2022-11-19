@@ -29,6 +29,9 @@ typedef uint32_t u32;
 #define SET_READ(x) ((x) |= (0x20000000))
 #define RESET_READ(x) ((x) &= (0xdfffffff))
 
+#define MAX(x, y) (((x) > (y)) ? (x) : (y))
+#define MIN(x, y) (((x) < (y)) ? (x) : (y))
+
 // #define EMPTY((x) & (0x40000000))
 // #define SET_EMPTY(x) ((x) |= (0x40000000))
 // #define RESET_EMPTY(x) ((x) &= (0xbfffffff))

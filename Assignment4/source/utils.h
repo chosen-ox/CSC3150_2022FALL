@@ -1,9 +1,9 @@
 #ifndef UTILS
 #define UTILS
-__device__ int is_filled(FileSystem *fs, int size) {
+__device__ int is_filled(int * superblock, int size) {
   int x = size / 32;
   int y = size % 32;
-  return fs->SUPERBLOCK[x] & (1<<y); 
+  return superblock[x] & (1<<y); 
 }
 
 __device__ int ceil(int x, int y) {
@@ -73,10 +73,13 @@ __device__ void copy_str(char* ori, char* dst) {
 __device__ int find_hole(int *superblock, int size) {
   int block_num = ceil(size, 32);
   int j;
-  for (int i = 0; i < 1024 * 32; i++) {
-    if (!is_filled(i)) {
+  for (int i = 0; i < 32768; i++) {
+    if (!is_filled(superblock, i)) {
+      if (32768 - i < size) {
+        break;
+      }
       for (j = 0; j < size; j++) {
-        if (is_filled(j)) {
+        if (is_filled(superblock ,j)) {
           break;
         }
       }
@@ -84,7 +87,7 @@ __device__ int find_hole(int *superblock, int size) {
         return i;
       }
       else {
-        i = j + 1
+        i = MIN(32767 ,j + 1);
       }
     }
   }
