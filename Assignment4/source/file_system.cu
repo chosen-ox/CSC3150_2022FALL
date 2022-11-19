@@ -148,9 +148,6 @@ __device__ u32 fs_write(FileSystem *fs, uchar* input, u32 size, u32 fp)
     }
     else {
 
-      for (int i = 0; i < 1024; i++) {
-        fs->SUPERBLOCK[i] = 0;
-      }
       RESET_VALID(fs->FCBS[fp].address);
       compact_blocks(fs);
       SET_VALID(fs->FCBS[fp].address);
