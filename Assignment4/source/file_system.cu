@@ -218,6 +218,7 @@ __device__ void fs_gsys(FileSystem *fs, int op, char *s)
       printf("no such file to delete");
     }
     else {
+      flush_blocks(fs, get_address(fs->FCBS[file]), ceil(fs->FCBS[file].size, 32));
       RESET_VALID(fs->FCBS[file].address);
     }
 

@@ -37,6 +37,17 @@ typedef uint32_t u32;
 #define SET_ROOT(x) ((x) |= (0x80000))
 #define RESET_ROOT(x) ((x) &= (0xfff7ffff))
 
+#define WRITE(x) ((x) & (0x10000000))
+#define SET_WRITE(x) ((x) |= (0x10000000))
+#define RESET_WRITE(x) ((x) &= (0xefffffff))
+
+#define READ(x) ((x) & (0x20000000))
+#define SET_READ(x) ((x) |= (0x20000000))
+#define RESET_READ(x) ((x) &= (0xdfffffff))
+
+#define MAX(x, y) (((x) > (y)) ? (x) : (y))
+#define MIN(x, y) (((x) < (y)) ? (x) : (y))
+
 #define PARENT(x) (x >>22)
 #define SET_PARENT(x, p) {\
 	(x) &= 0x003fffff;\
@@ -45,15 +56,15 @@ typedef uint32_t u32;
 
 typedef struct FCB {
 	char name[20];
-	int address_size;//0-15 size, 16-31 addr
-	int create_time;
-	int modified_time;	
+	int size;//0-15 size, 16-31 addr
+	int create_modified;
+	int address;	
 } FCB;
 
 struct FileSystem {
-	unsigned int SUPERBLOCK[1024];
+	int SUPERBLOCK[1024];
 	FCB FCBS[1024];
-	uchar FILES[1024][1024];
+	uchar BLOCKS[32768][32];
 
 	int SUPERBLOCK_SIZE;
 	int FCB_SIZE;
