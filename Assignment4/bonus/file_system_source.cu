@@ -213,7 +213,6 @@ __device__ u32 fs_write(FileSystem *fs, uchar* input, u32 size, u32 fp)
 
   if (gtime == 65535) {
     gtime = sort_by_time(fs->FCBS);
-    printf("gtime:%d\n", gtime);
   }
 
   set_modified_time(&fs->FCBS[fp], gtime);
@@ -348,7 +347,6 @@ __device__ void fs_gsys(FileSystem *fs, int op, char *s)
       fs->FCBS[WD[0]].size -= get_len(s);
       if (gtime == 65535) {
         gtime = sort_by_time(fs->FCBS);
-        printf("gtime:%d\n", gtime);
       }
       set_modified_time(&fs->FCBS[file], gtime);
       if (WD[0] != -1) 
@@ -405,7 +403,6 @@ __device__ void fs_gsys(FileSystem *fs, int op, char *s)
     }
       if (gtime == 65535) {
         gtime = sort_by_time(fs->FCBS);
-        printf("gtime:%d\n", gtime);
       }
 
       // empty not anymore

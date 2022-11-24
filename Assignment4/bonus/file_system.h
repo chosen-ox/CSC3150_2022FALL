@@ -48,7 +48,7 @@ typedef uint32_t u32;
 #define MAX(x, y) (((x) > (y)) ? (x) : (y))
 #define MIN(x, y) (((x) < (y)) ? (x) : (y))
 
-#define PARENT(x) (x >>22)
+#define PARENT(x) ((unsigned int)x >>22)
 #define SET_PARENT(x, p) {\
 	(x) &= 0x003fffff;\
 	(x) |= (p) << 22;\
