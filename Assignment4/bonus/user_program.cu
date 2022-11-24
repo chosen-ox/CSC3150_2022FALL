@@ -49,19 +49,20 @@ __device__ void user_program(FileSystem *fs, uchar *input, uchar *output) {
 	fs_gsys(fs, LS_S);//11
 	fs_gsys(fs, CD_P);
 	fs_gsys(fs, LS_S);//12		
-	// printf("------------------------------------\n");
+	printf("------------------------------------\n");
 	// fs_gsys(fs, RM_RF, "app\0");
-	// fs_gsys(fs, LS_S);//12		
-	// fs_gsys(fs, CD, "app\0");
+	fs_gsys(fs, LS_S);//12		
+	fs_gsys(fs, CD, "app\0");
 
-	// fs_gsys(fs, CD, "app\0");
-	// fs_gsys(fs, RM_RF, "a.txt\0");
-	// fs_gsys(fs, LS_S);
-	// fs_gsys(fs, CD_P);
-	// fs_gsys(fs, LS_S);		
-	// fs_gsys(fs, LS_S);		
-	// fs_gsys(fs, RM_RF, "app\0");
-	// fs_gsys(fs, LS_S);		
+	fs_gsys(fs, CD, "app\0");
+	fs_gsys(fs, LS_S);//12		
+	fs_gsys(fs, RM, "a.txt\0");
+	fs_gsys(fs, LS_S);
+	fs_gsys(fs, CD_P);
+	fs_gsys(fs, LS_S);		
+	fs_gsys(fs, LS_S);		
+	fs_gsys(fs, RM_RF, "app\0");
+	fs_gsys(fs, LS_S);		
 	
 	/////////////// Test Case 1  ///////////////
 	// u32 fp = fs_open(fs, "t.txt\0", G_WRITE);

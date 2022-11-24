@@ -215,7 +215,7 @@ __device__ void fs_gsys(FileSystem *fs, int op, char *s)
     }
 
     if (file == - 1) {
-      printf("no such file to delete");
+      printf("No such file to delete\n");
     }
     else {
       flush_blocks(fs, get_address(fs->FCBS[file]), ceil(fs->FCBS[file].size, 32));
