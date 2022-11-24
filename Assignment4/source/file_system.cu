@@ -79,7 +79,7 @@ __device__ u32 fs_open(FileSystem *fs, char *s, int op)
   }
   else if (op == G_WRITE) {
     if (empty_block == -1) {
-      printf("No more space to create new file!!!\n");
+      printf("The file number reaches the limit!!!\n");
       return 0;
     }
     else {

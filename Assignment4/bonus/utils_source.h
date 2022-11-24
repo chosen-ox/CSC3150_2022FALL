@@ -72,7 +72,7 @@ __device__ int get_address(FCB fcb) {
 }
  
 __device__ int get_create_time(FCB fcb) {
-  return fcb.create_modified >> 16;
+  return (unsigned int) fcb.create_modified >> 16;
 }
 
 __device__ int get_modified_time(FCB fcb) {

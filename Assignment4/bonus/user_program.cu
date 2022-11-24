@@ -20,6 +20,7 @@ __device__ void user_program(FileSystem *fs, uchar *input, uchar *output) {
 	fs_gsys(fs, LS_D);//3
 	fs_gsys(fs, LS_S);//4
 	fs_gsys(fs, CD, "app\0");
+	fs_gsys(fs, PWD);
 	fs_gsys(fs, LS_S);//5
 	fp = fs_open(fs, "a.txt\0", G_WRITE);
 	fs_write(fs, input + 128, 64, fp);
@@ -46,6 +47,10 @@ __device__ void user_program(FileSystem *fs, uchar *input, uchar *output) {
 	fs_gsys(fs, LS_S);//10
 	fs_gsys(fs, CD, "app\0");
 	fs_gsys(fs, RM_RF, "soft\0");
+	fs_gsys(fs, MKDIR, "soft\0");
+	fs_gsys(fs, MKDIR, "soft1\0");
+	fs_gsys(fs, MKDIR, "soft2\0");
+	fs_gsys(fs, MKDIR, "soft2\0");
 	fs_gsys(fs, LS_S);//11
 	fs_gsys(fs, CD_P);
 	fs_gsys(fs, LS_S);//12		
@@ -58,6 +63,7 @@ __device__ void user_program(FileSystem *fs, uchar *input, uchar *output) {
 	fs_gsys(fs, LS_S);//12		
 	fs_gsys(fs, RM, "a.txt\0");
 	fs_gsys(fs, LS_S);
+	fs_gsys(fs, CD_P);
 	fs_gsys(fs, CD_P);
 	fs_gsys(fs, LS_S);		
 	fs_gsys(fs, LS_S);		
