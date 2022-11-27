@@ -78,6 +78,7 @@ struct FileSystem {
 };
 
 
+
 __device__ void fs_init(FileSystem *fs, int SUPERBLOCK_SIZE,
 	int FCB_SIZE, int FCB_ENTRIES, int VOLUME_SIZE,
 	int STORAGE_BLOCK_SIZE, int MAX_FILENAME_SIZE,

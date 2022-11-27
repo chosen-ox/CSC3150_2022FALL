@@ -318,9 +318,11 @@ __device__ void fs_gsys(FileSystem *fs, int op, char *s)
     for (int i = 0; i < 1024; i++) {
       if (VALID(fs->FCBS[i].address)) {
         if (ROOT(fs->FCBS[i].address)) {
+          if (!DIR(fs->FCBS[i].address)){
           if (cmp_str(fs->FCBS[i].name, s)) 
           file =i;
         }
+      }
       }
     }
   }
@@ -328,8 +330,10 @@ __device__ void fs_gsys(FileSystem *fs, int op, char *s)
     for (int i = 0; i < 1024; i++) {
       if (VALID(fs->FCBS[i].address)) {
         if (!ROOT(fs->FCBS[i].address) && PARENT(fs->FCBS[i].address) == WD[0]) {
+          if (!DIR(fs->FCBS[i].address)) {
           if (cmp_str(fs->FCBS[i].name, s)) 
             file = i;
+          } 
         }
       }
     }
@@ -338,9 +342,6 @@ __device__ void fs_gsys(FileSystem *fs, int op, char *s)
 
     if (file == - 1) {
       printf("No such file to delete!!\n");
-    }
-    else if (DIR(fs->SUPERBLOCK[file])) {
-      printf("It is a directory!\n");
     }
     else {
       if (!ROOT(fs->FCBS[file].address)) 
@@ -507,7 +508,11 @@ __device__ void fs_gsys(FileSystem *fs, int op, char *s)
       }
     }
   }
- 
+    if (gtime == 65535) {
+        gtime = sort_by_time(fs->FCBS);
+      }
+
+
     if (file == - 1) {
       printf("No such directory to delete\n");
     }
