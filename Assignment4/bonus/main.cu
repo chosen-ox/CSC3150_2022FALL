@@ -27,7 +27,7 @@ __device__ __managed__ uchar input[MAX_FILE_SIZE];
 __device__ __managed__ uchar output[MAX_FILE_SIZE];
 
 // volume (disk storage)
-__device__ __managed__ uchar volume[VOLUME_SIZE];
+// __device__ __managed__ uchar volume[VOLUME_SIZE];
 
 
 
@@ -37,7 +37,7 @@ __global__ void mykernel(uchar *input, uchar *output) {
 
   // Initilize the file system	
   FileSystem* fs = new FileSystem();
-  fs_init(fs, volume, SUPERBLOCK_SIZE, FCB_SIZE, FCB_ENTRIES, 
+  fs_init(fs, SUPERBLOCK_SIZE, FCB_SIZE, FCB_ENTRIES, 
 			VOLUME_SIZE,STORAGE_BLOCK_SIZE, MAX_FILENAME_SIZE, 
 			MAX_FILE_NUM, MAX_FILE_SIZE, FILE_BASE_ADDRESS);
 

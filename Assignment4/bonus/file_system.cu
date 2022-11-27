@@ -8,7 +8,7 @@
 __device__ __managed__ u32 gtime = 0;
 
 
-__device__ void fs_init(FileSystem *fs, uchar *volume, int SUPERBLOCK_SIZE,
+__device__ void fs_init(FileSystem *fs, int SUPERBLOCK_SIZE,
 							int FCB_SIZE, int FCB_ENTRIES, int VOLUME_SIZE,
 							int STORAGE_BLOCK_SIZE, int MAX_FILENAME_SIZE, 
 							int MAX_FILE_NUM, int MAX_FILE_SIZE, int FILE_BASE_ADDRESS)
