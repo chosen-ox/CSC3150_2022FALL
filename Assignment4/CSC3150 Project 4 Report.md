@@ -124,54 +124,50 @@ struct FileSystem {
 
 ### Operations
 
+#### source
+
 - Open 
   - Find the corresponding FCB vie file name 
   - If found, return the FBC’s index 
   - If not, find a empty FCB to store this newly opened file’s info
   - Update FCB's create time and modified time, its parent.
-
 - Read 
 
   - Check if it is a valid read size.
 
   - Simply read each blocks’ info 
-
 - Write 
 
   - Check if it is a valid read size
   - Simply write to each block
   - Update FBC’s size and modified time 
-
 - LS (by Date / Size) 
 
   - Declare a new array for sorted FBCs 
   - Copy all available FBCs to this array 
   - Use bubble sort to sort this new array (by Date / Size) 
   - Print info of the sorted array 
-
 - RM 
 
   - Re-initialize its corresponding FCB to original state (this denotes that this FCB is not used) 
   - Re-initialize its corresponding bitmap to zero.
 
-- RM-RF 
+#### bonus
+
+- RM_RF 
 
   - Use a queue to recursively remove the directory and all its sub files.
-
 - MKDIR 
 
   - simliar as `open` , but set directory bit in the corresponding fcb.
-
 - CD 
 
   - reset working directory bit of old fcb
 
   - set working directory bit of current fcb
-
 - CD_P 
 
   - set the current FS to its parent. 
-
 - PWD 
 
   - Print out the path of working directory
@@ -184,6 +180,7 @@ struct FileSystem {
 - support compact blocks: if there no more space to write, do a compact to collect segments to create continuous big enough space to write new files.
 - support infinite operations: create time and modified time only has a max of $2^{16} - 1$ . If `gtime` reaches the max, we will sort fcbs by their create time and modified time to reduce the current `gtime` to a number less or equal to 1024(max file nums). As a reuslt, we support infinite operations without overflow.
 - invalid operation warning: we automatically check invalid operations and stop the operations, including but not limited to read non-written blocks, remove a non-exist file, mkdir a already exist directory. 
+- support multi-level modified time update: if a sub-file or sub directory is modified (rm or write), all its parents' modified time will  
 
 ## 4. Problem Encountered
 
