@@ -200,12 +200,19 @@ __device__ void refill_blocks(FileSystem *fs, int address, int old_size, int new
 
 __device__ void move_blocks(FileSystem *fs, int old_address, int new_address, int block_num) {
   // uchar tmp[block_num * 32];
-  uchar *tmp = (uchar *) malloc(sizeof(uchar) * block_num * 32);
-  read_blocks(fs, old_address, block_num * 32, tmp);
+  // uchar *tmp = (uchar *) malloc(sizeof(uchar) * block_num * 32);
+  // read_blocks(fs, old_address, block_num * 32, tmp);
+  int i, j;
   flush_blocks(fs, old_address, block_num);
-  fill_blocks(fs, new_address, block_num * 32, tmp);
+  // fill_blocks(fs, new_address, block_num * 32, tmp);
+  for (i = 0; i < block_num; i++) {
+    set_block(fs->SUPERBLOCK, new_address + i);
+    for (j = 0; j < 32; j++) {
+      fs->BLOCKS[new_address + i][j] = fs->BLOCKS[old_address + i][j];
+    }
+  }
+  // free(tmp);
 
-  free(tmp);
 }
 
 __device__ void compact_blocks(FileSystem * fs) {
