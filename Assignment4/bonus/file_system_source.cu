@@ -3,12 +3,12 @@
 #include <cuda_runtime.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "utils.h"
+#include "utils_source.h"
 
 __device__ __managed__ u32 gtime = 0;
 
 
-__device__ void fs_init(FileSystem *fs, int SUPERBLOCK_SIZE,
+__device__ void fs_init(FileSystem *fs, uchar *volume, int SUPERBLOCK_SIZE,
 							int FCB_SIZE, int FCB_ENTRIES, int VOLUME_SIZE,
 							int STORAGE_BLOCK_SIZE, int MAX_FILENAME_SIZE, 
 							int MAX_FILE_NUM, int MAX_FILE_SIZE, int FILE_BASE_ADDRESS)
@@ -318,11 +318,9 @@ __device__ void fs_gsys(FileSystem *fs, int op, char *s)
     for (int i = 0; i < 1024; i++) {
       if (VALID(fs->FCBS[i].address)) {
         if (ROOT(fs->FCBS[i].address)) {
-          if (!DIR(fs->FCBS[i].address)){
           if (cmp_str(fs->FCBS[i].name, s)) 
           file =i;
         }
-      }
       }
     }
   }
@@ -330,10 +328,8 @@ __device__ void fs_gsys(FileSystem *fs, int op, char *s)
     for (int i = 0; i < 1024; i++) {
       if (VALID(fs->FCBS[i].address)) {
         if (!ROOT(fs->FCBS[i].address) && PARENT(fs->FCBS[i].address) == WD[0]) {
-          if (!DIR(fs->FCBS[i].address)) {
           if (cmp_str(fs->FCBS[i].name, s)) 
             file = i;
-          } 
         }
       }
     }
@@ -342,6 +338,9 @@ __device__ void fs_gsys(FileSystem *fs, int op, char *s)
 
     if (file == - 1) {
       printf("No such file to delete!!\n");
+    }
+    else if (DIR(fs->SUPERBLOCK[file])) {
+      printf("It is a directory!\n");
     }
     else {
       if (!ROOT(fs->FCBS[file].address)) 
@@ -508,11 +507,7 @@ __device__ void fs_gsys(FileSystem *fs, int op, char *s)
       }
     }
   }
-    if (gtime == 65535) {
-        gtime = sort_by_time(fs->FCBS);
-      }
-
-
+ 
     if (file == - 1) {
       printf("No such directory to delete\n");
     }

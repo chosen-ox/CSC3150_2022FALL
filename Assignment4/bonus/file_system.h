@@ -21,23 +21,34 @@ typedef uint32_t u32;
 
 #define RESET(x) ((x) = (0))
 
-#define VALID(x) (x & 0b1)
-#define SET_VALID(x) ((x) |= (0b1))
-#define RESET_VALID(x) ((x) &= (0xfffffffe))
+#define VALID(x) (x & 0x10000)
+#define SET_VALID(x) ((x) |= (0x10000))
+#define RESET_VALID(x) ((x) &= (0xfffeffff))
 
-#define DIR(x) ((x & 0b10))
-#define SET_DIR(x) ((x) |= (0b10))
-#define RESET_DIR(x) ((x) &= (0xfffffffd))
+#define DIR(x) ((x & 0x20000))
+#define SET_DIR(x) ((x) |= (0x20000))
+#define RESET_DIR(x) ((x) &= (0xfffdffff))
 
-#define	WD(x) (x & 0b100) 
-#define SET_WD(x) ((x) |= (0b100))
-#define RESET_WD(x) ((x) &= (0xfffffffb))
+#define	WD(x) (x & 0x40000) 
+#define SET_WD(x) ((x) |= (0x40000))
+#define RESET_WD(x) ((x) &= (0xfffbffff))
 
-#define ROOT(x) (x & 0b1000)
-#define SET_ROOT(x) ((x) |= (0b1000))
-#define RESET_ROOT(x) ((x) &= (0xfffffff7))
+#define ROOT(x) (x & 0x80000)
+#define SET_ROOT(x) ((x) |= (0x80000))
+#define RESET_ROOT(x) ((x) &= (0xfff7ffff))
 
-#define PARENT(x) (x >>22)
+#define WRITE(x) ((x) & (0x10000000))
+#define SET_WRITE(x) ((x) |= (0x10000000))
+#define RESET_WRITE(x) ((x) &= (0xefffffff))
+
+#define READ(x) ((x) & (0x20000000))
+#define SET_READ(x) ((x) |= (0x20000000))
+#define RESET_READ(x) ((x) &= (0xdfffffff))
+
+#define MAX(x, y) (((x) > (y)) ? (x) : (y))
+#define MIN(x, y) (((x) < (y)) ? (x) : (y))
+
+#define PARENT(x) ((unsigned int)x >>22)
 #define SET_PARENT(x, p) {\
 	(x) &= 0x003fffff;\
 	(x) |= (p) << 22;\
@@ -45,15 +56,15 @@ typedef uint32_t u32;
 
 typedef struct FCB {
 	char name[20];
-	int address_size;//0-15 size, 16-31 addr
-	int create_time;
-	int modified_time;	
+	int size;//0-15 size, 16-31 addr
+	int create_modified;
+	int address;	
 } FCB;
 
 struct FileSystem {
-	unsigned int SUPERBLOCK[1024];
+	int SUPERBLOCK[1024];
 	FCB FCBS[1024];
-	uchar FILES[1024][1024];
+	uchar BLOCKS[32768][32];
 
 	int SUPERBLOCK_SIZE;
 	int FCB_SIZE;
@@ -67,7 +78,8 @@ struct FileSystem {
 };
 
 
-__device__ void fs_init(FileSystem *fs, uchar *volume, int SUPERBLOCK_SIZE,
+
+__device__ void fs_init(FileSystem *fs, int SUPERBLOCK_SIZE,
 	int FCB_SIZE, int FCB_ENTRIES, int VOLUME_SIZE,
 	int STORAGE_BLOCK_SIZE, int MAX_FILENAME_SIZE,
 	int MAX_FILE_NUM, int MAX_FILE_SIZE, int FILE_BASE_ADDRESS);

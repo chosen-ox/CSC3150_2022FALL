@@ -14,17 +14,40 @@ typedef uint32_t u32;
 #define LS_S 1
 #define RM 2
 
+
+#define RESET(x) ((x) = (0))
+
+#define VALID(x) (x & 0x10000)
+#define SET_VALID(x) ((x) |= (0x10000))
+#define RESET_VALID(x) ((x) &= (0xfffeffff))
+
+#define WRITE(x) ((x) & (0x10000000))
+#define SET_WRITE(x) ((x) |= (0x10000000))
+#define RESET_WRITE(x) ((x) &= (0xefffffff))
+
+#define READ(x) ((x) & (0x20000000))
+#define SET_READ(x) ((x) |= (0x20000000))
+#define RESET_READ(x) ((x) &= (0xdfffffff))
+
+#define MAX(x, y) (((x) > (y)) ? (x) : (y))
+#define MIN(x, y) (((x) < (y)) ? (x) : (y))
+
+// #define EMPTY((x) & (0x40000000))
+// #define SET_EMPTY(x) ((x) |= (0x40000000))
+// #define RESET_EMPTY(x) ((x) &= (0xbfffffff))
+
 typedef struct FCB {
 	char name[20];
-	int address_size;//0-15 size, 16-31 addr
-	int create_time;
-	int modified_time;	
+	int size;
+	int create_modified;//0-15 modified time, 16-31 create time
+	int address;	
 } FCB;
 
 struct FileSystem {
 	int SUPERBLOCK[1024];
 	FCB FCBS[1024];
-	uchar FILES[1024][1024];
+	// uchar FILES[1024][1024];
+	uchar BLOCKS[32768][32];
 
 	int SUPERBLOCK_SIZE;
 	int FCB_SIZE;
@@ -38,7 +61,7 @@ struct FileSystem {
 };
 
 
-__device__ void fs_init(FileSystem *fs, uchar *volume, int SUPERBLOCK_SIZE,
+__device__ void fs_init(FileSystem *fs, int SUPERBLOCK_SIZE,
 	int FCB_SIZE, int FCB_ENTRIES, int VOLUME_SIZE,
 	int STORAGE_BLOCK_SIZE, int MAX_FILENAME_SIZE,
 	int MAX_FILE_NUM, int MAX_FILE_SIZE, int FILE_BASE_ADDRESS);

@@ -8,7 +8,7 @@
 __device__ __managed__ u32 gtime = 0;
 
 
-__device__ void fs_init(FileSystem *fs, uchar *volume, int SUPERBLOCK_SIZE,
+__device__ void fs_init(FileSystem *fs, int SUPERBLOCK_SIZE,
 							int FCB_SIZE, int FCB_ENTRIES, int VOLUME_SIZE,
 							int STORAGE_BLOCK_SIZE, int MAX_FILENAME_SIZE, 
 							int MAX_FILE_NUM, int MAX_FILE_SIZE, int FILE_BASE_ADDRESS)
@@ -46,7 +46,7 @@ __device__ void fs_init(FileSystem *fs, uchar *volume, int SUPERBLOCK_SIZE,
   // FCB *ptr = (FCB *) &fs->volume[fcb_base];
 
   for (int i = 0; i < 1024; i++) {
-    set_address(&fs->FCBS[i], i);  
+    set_address(&fs->FCBS[i], 0);  
   }
 
 }
@@ -57,8 +57,14 @@ __device__ u32 fs_open(FileSystem *fs, char *s, int op)
 {
   int empty_block = -1;
   for (int i = 0; i < 1024; i++) {
-    if (fs->SUPERBLOCK[i] == 1) {
+    if (VALID(fs->FCBS[i].address)) {
         if (cmp_str(fs->FCBS[i].name, s)) {
+          if (op == G_READ) {
+            SET_READ(i);
+          }
+          else {
+            SET_WRITE(i);
+          }
           return i;
         }
     }
@@ -73,14 +79,23 @@ __device__ u32 fs_open(FileSystem *fs, char *s, int op)
   }
   else if (op == G_WRITE) {
     if (empty_block == -1) {
-      printf("No more space to create new file!!!\n");
+      printf("The file number reaches the limit!!!\n");
       return 0;
     }
     else {
-      fs->SUPERBLOCK[empty_block] = 1;
+      // fs->SUPERBLOCK[empty_block] = 1;
+      // fs->FCBS[empty_block].create_time = gtime++;
+      // fs->FCBS[empty_block].modified_time = 0;
+      if (gtime == 65535) {
+        gtime = sort_by_time(fs->FCBS);
+      }
+      // empty not anymore
+      SET_VALID(fs->FCBS[empty_block].address);
       copy_str(s, fs->FCBS[empty_block].name);
-      fs->FCBS[empty_block].create_time = gtime++;
-      fs->FCBS[empty_block].modified_time = 0;
+      set_create_time(&fs->FCBS[empty_block], gtime);
+      set_modified_time(&fs->FCBS[empty_block], gtime++);
+      fs->FCBS[empty_block].size = 0;
+      SET_WRITE(empty_block);
       return empty_block;
     }
   }
@@ -93,23 +108,69 @@ __device__ u32 fs_open(FileSystem *fs, char *s, int op)
 
 __device__ void fs_read(FileSystem *fs, uchar *output, u32 size, u32 fp)
 {
-	for (int i = 0; i < size; i++) {
-    output[i] = fs->FILES[get_address(fs->FCBS[fp])][i];
+  if (!READ(fp)) {
+    printf("No read permission!\n");
+    return ; 
   }
+  fp = fp & 0x0000ffff;
+  if (fs->FCBS[fp].size < size) {
+    printf("access size larger than the actul size of the file!!!\n");
+    return ;
+  }
+  read_blocks(fs, get_address(fs->FCBS[fp]), size, output);
 }
 
 __device__ u32 fs_write(FileSystem *fs, uchar* input, u32 size, u32 fp)
 {
 
 
-  fs->FCBS[fp].modified_time = gtime++;
-  set_size(&fs->FCBS[fp], size);
-  for (int i =0; i < 1024; i++) {
-    fs->FILES[get_address(fs->FCBS[fp])][i] = '\0';
+  if (!WRITE(fp)) {
+    printf("No write permission!\n");
+    return ; 
   }
-  for (int i = 0; i < size; i++) {
-    fs->FILES[get_address(fs->FCBS[fp])][i] = input[i];
+  fp = fp & 0x0000ffff;
+
+  // printf("name%s time: %d\n", fs->FCBS[fp].name, gtime - 1);
+  
+  int block_need = ceil(size, 32);
+  int block_need_old = ceil(fs->FCBS[fp].size, 32);
+  if (block_need <= block_need_old) {
+    refill_blocks(fs, get_address(fs->FCBS[fp]), fs->FCBS[fp].size, size, input); 
+    fs->FCBS[fp].size = size;
   }
+  else {
+    int address = find_hole(fs->SUPERBLOCK, size);
+    if (address != -1) {
+      flush_blocks(fs, get_address(fs->FCBS[fp]), block_need_old);
+      fill_blocks(fs, address, size, input);
+      set_address(&fs->FCBS[fp], address);
+      fs->FCBS[fp].size = size;
+    }
+    else {
+
+      RESET_VALID(fs->FCBS[fp].address);
+      compact_blocks(fs);
+      SET_VALID(fs->FCBS[fp].address);
+      int address = find_hole(fs->SUPERBLOCK, size);
+      if (address != -1) {
+        flush_blocks(fs, get_address(fs->FCBS[fp]), block_need_old);
+        fill_blocks(fs, address, size, input);
+        set_address(&fs->FCBS[fp], address);
+        fs->FCBS[fp].size = size;
+      }
+      else {
+        printf("no big enough continous space!!!\n");
+      }
+      return 0;
+    }
+  }
+
+  if (gtime == 65535) {
+    gtime = sort_by_time(fs->FCBS);
+    printf("gtime:%d\n", gtime);
+  }
+
+  set_modified_time(&fs->FCBS[fp], gtime++);
   return 0;
 }
 __device__ void fs_gsys(FileSystem *fs, int op)
@@ -118,7 +179,7 @@ __device__ void fs_gsys(FileSystem *fs, int op)
     FCB valid_fcbs[1024];
     int offset = 0;
     for (int i = 0; i < 1024; i++) {
-      if (fs->SUPERBLOCK[i] == 1) {
+      if (VALID(fs->FCBS[i].address)) {
         valid_fcbs[offset++] = fs->FCBS[i];
       }
     }
@@ -129,7 +190,7 @@ __device__ void fs_gsys(FileSystem *fs, int op)
     FCB valid_fcbs[1024];
     int offset = 0;
     for (int i = 0; i < 1024; i++) {
-      if (fs->SUPERBLOCK[i] == 1) {
+      if (VALID(fs->FCBS[i].address)) {
         valid_fcbs[offset++] = fs->FCBS[i];
       }
     }
@@ -146,7 +207,7 @@ __device__ void fs_gsys(FileSystem *fs, int op, char *s)
 	if (op == RM) {
     int file = -1;
     for (int i = 0; i < 1024; i++) {
-      if (fs->SUPERBLOCK[i] == 1) {
+      if (VALID(fs->FCBS[i].address)) {
         if (cmp_str(fs->FCBS[i].name, s)) {
           file = i;
         }
@@ -154,14 +215,11 @@ __device__ void fs_gsys(FileSystem *fs, int op, char *s)
     }
 
     if (file == - 1) {
-      printf("no such file to delete");
+      printf("No such file to delete\n");
     }
     else {
-      for (int i = 0; i < 1024; i++) {
-        fs->FILES[get_address(fs->FCBS[file])][i] = '\0';
-      }
-      fs->SUPERBLOCK[file] = 0;
-
+      flush_blocks(fs, get_address(fs->FCBS[file]), ceil(fs->FCBS[file].size, 32));
+      RESET_VALID(fs->FCBS[file].address);
     }
 
   }
